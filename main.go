@@ -33,25 +33,18 @@ func main() {
 		"before", cfg.RenewBefore.String(),
 		"password_required", cfg.UIPassword != "")
 
-	// 确保根 CA 就绪：首次启动自动生成根证书（默认 EC P-256，10 年）
+	// 首次启动自动生成根 CA；已存在则加载，失败报错绝不覆盖
 	if _, err := ca.InitRoot(cfg); err != nil {
 		slog.Error("根 CA 初始化失败", "err", err)
 	}
 
-	// CSRF 防护：浏览器发起的跨站请求（Sec-Fetch-Site: cross-site）一律拒绝。
-	//
-	// UI_PASSWORD 默认为空，而 /api/certs/{name}/revoke、/renew、/api/renew/scan
-	// 都不读请求体，可以被任意网页用 <form> 以简单请求跨站提交——恶意页面
-	// 因此能直接吊销本机的证书。不带 Sec-Fetch-Site / Origin 的请求
-	// （curl、脚本、监控探针）不算跨站，照常放行。
+	// CSRF：UI_PASSWORD 为空时写接口可被跨站表单提交，cross-site 一律拒绝；无 Sec-Fetch-Site/Origin 的脚本请求放行。
 	prot := http.NewCrossOriginProtection()
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
 		Handler: api.LoggingMiddleware(prot.Handler(api.NewRouter(cfg))),
-		// 只对「读」设超时：慢速请求头（Slowloris）是外部可达的攻击面。
-		// WriteTimeout 刻意留空——轮换根证书（生成 RSA 4096 并对全部证书重签）
-		// 可能持续数十秒，写入超时会把这类长任务半路掐断。
+		// WriteTimeout 留空：根轮换全量重签可能持续数十秒，不能被写超时掐断
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       60 * time.Second,
 		IdleTimeout:       120 * time.Second,
@@ -60,8 +53,7 @@ func main() {
 
 	scheduler.Start(cfg)
 
-	// 收到 SIGINT / SIGTERM 后停止接收新连接，并给在途请求留出收尾时间，
-	// 避免 docker stop 时把正在写盘的操作拦腰截断。
+	// 优雅关停：给在途写盘请求留收尾时间，避免 docker stop 截断
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
