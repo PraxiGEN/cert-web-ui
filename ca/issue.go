@@ -14,10 +14,7 @@ import (
 	"cert-web-ui/store"
 )
 
-// clampToRoot 把叶子有效期压到「当前根剩余寿命」之内（向下取整到分钟）。
-//
-// 客户端信任链条的终点就是这张根：叶子活得比根更久没有任何意义，
-// 只会让证书在根过期之后依旧显示「未到期」，把真正的故障点藏起来。
+// clampToRoot 叶子有效期压到当前根剩余寿命内：叶子活得比根久只会掩盖故障
 func clampToRoot(validity time.Duration, root *RootCA) time.Duration {
 	remaining := time.Until(root.Cert.NotAfter).Truncate(time.Minute)
 	if remaining <= 0 {
@@ -29,8 +26,7 @@ func clampToRoot(validity time.Duration, root *RootCA) time.Duration {
 	return validity
 }
 
-// validateSAN 拒绝必然非法、且会污染文件名的 SAN 条目。
-// 不追求完整的 DNS 名文法（那样会误伤 _acme-challenge 之类），只挡路径分隔符与不可见字符。
+// validateSAN 只挡路径分隔符与不可见字符，不做完整 DNS 文法（避免误伤 _acme-challenge）
 func validateSAN(s string) error {
 	if s == "" || s == "." || s == ".." {
 		return fmt.Errorf("SAN 不能为 %q", s)
@@ -41,10 +37,7 @@ func validateSAN(s string) error {
 	return nil
 }
 
-// certFileName 把域名转成安全的文件名主干。
-// 与 SanitizeFolder 同一白名单（字母/数字/连字符/下划线，另放行点号）：
-// 文件名会原样进入前端的下载链接与复制按钮，任何引号、括号都可能构成
-// 存储型 XSS，所以这里不做「替换危险字符」而做「只保留安全字符」。
+// certFileName 白名单转安全文件名：文件名进入下载链接与 onclick，任何引号括号都是存储型 XSS
 func certFileName(domain string) string {
 	var b strings.Builder
 	for _, r := range strings.TrimSpace(domain) {
@@ -65,13 +58,11 @@ func certFileName(domain string) string {
 
 // Issue 使用内置根 CA 直接签发新证书（进程内完成，无外部依赖），并写入 metadata。
 func Issue(cfg config.Config, req IssueRequest) (IssueResult, error) {
-	// 全程持读锁：换根（写锁）期间不允许插入签名动作，
-	// 否则会出现「证书由已经被归档的旧根签发」的孤儿。
+	// 持读锁：换根（写锁）期间禁止签发，避免出现旧根签发的孤儿证书
 	swapMu.RLock()
 	defer swapMu.RUnlock()
 
-	// 主域名(=证书 CN)可选：未填时从 SAN 第一行取。TLS 客户端只看 SAN，
-	// 因此这里会把 CN 一并写进 SAN 列表，只填一个域名也完全有效。
+	// 主域名可选：未填时取 SAN 第一行，并把 CN 一并写进 SAN 列表
 	domain := strings.TrimSpace(req.Domain)
 	sans := parseSANs(req.SANs)
 	if domain == "" {
@@ -89,8 +80,7 @@ func Issue(cfg config.Config, req IssueRequest) (IssueResult, error) {
 		}
 	}
 
-	// 名称即文件夹名；为空时回退用主域名。先按白名单清洗，再按单层路径校验，
-	// 保证 "." / ".." / 带分隔符的名称根本进不到文件系统。
+	// 名称即文件夹名（为空回退主域名）：白名单清洗 + 单层路径校验
 	folder := SanitizeFolder(req.Name)
 	if folder == "" {
 		folder = SanitizeFolder(domain)
@@ -105,8 +95,7 @@ func Issue(cfg config.Config, req IssueRequest) (IssueResult, error) {
 	}
 
 	outputDir := filepath.Join(cfg.OutputBase, folder)
-	// 同名文件夹一律拒绝：两个域名挤进同一目录时，findCertKey / ListCerts
-	// 只按文件名字典序取到最后一张 .crt，另一张会静默隐身。
+	// 同名文件夹一律拒绝：挤同一目录会让另一张证书静默隐身
 	if fi, serr := os.Stat(outputDir); serr == nil && fi.IsDir() {
 		return IssueResult{}, fmt.Errorf("已存在同名文件夹 %q，请换一个名称，或先删除它", folder)
 	}
