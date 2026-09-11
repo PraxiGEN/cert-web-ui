@@ -10,6 +10,12 @@ import (
 	"cert-web-ui/store"
 )
 
+// Failure 是一次扫描中单条失败记录（供 API 只读展示）。
+type Failure struct {
+	Name  string `json:"name"`  // 证书名；为空表示扫描本身失败（如目录读取失败）
+	Error string `json:"error"` // 失败原因
+}
+
 // State 是自动续签调度的可观测状态（供 API 只读展示）。
 type State struct {
 	Interval  string    `json:"interval"`           // 扫描间隔
@@ -20,6 +26,7 @@ type State struct {
 	AutoRenew int       `json:"auto_renew"`         // 加入自动续签的证书数
 	Renewed   int       `json:"renewed"`            // 上次扫描续签成功数
 	Failed    int       `json:"failed"`             // 上次扫描续签失败数
+	Failures  []Failure `json:"failures,omitempty"` // 上次扫描的失败明细
 	Running   bool      `json:"running"`            // 是否有扫描正在执行
 }
 
@@ -129,6 +136,7 @@ func runOnce(cfg config.Config) {
 		mu.Lock()
 		state.Running = false
 		state.LastScan = start
+		state.Failures = []Failure{{Error: "扫描失败：" + err.Error()}}
 		mu.Unlock()
 		return
 	}
@@ -143,6 +151,7 @@ func runOnce(cfg config.Config) {
 	slog.Info("自动续签扫描开始", "total", total, "auto_renew", auto)
 
 	renewed, failed := 0, 0
+	var failures []Failure
 	for _, e := range entries {
 		if !e.AutoRenew {
 			continue
@@ -151,6 +160,7 @@ func runOnce(cfg config.Config) {
 			if err := ca.Renew(cfg, e.Name); err != nil {
 				slog.Error("自动续签失败", "name", e.Name, "err", err)
 				failed++
+				failures = append(failures, Failure{Name: e.Name, Error: err.Error()})
 			} else {
 				slog.Info("自动续签成功", "name", e.Name)
 				renewed++
@@ -163,6 +173,7 @@ func runOnce(cfg config.Config) {
 	state.AutoRenew = auto
 	state.Renewed = renewed
 	state.Failed = failed
+	state.Failures = failures
 	state.LastScan = start
 	state.NextScan = time.Now().Add(cfg.RenewInterval)
 	state.Running = false
