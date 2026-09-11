@@ -134,14 +134,15 @@ func Issue(cfg config.Config, req IssueRequest) (IssueResult, error) {
 	}
 
 	meta := store.Metadata{
-		Domain:    domain,
-		Folder:    folder,
-		SANs:      sans,
-		KeyType:   lk.KeyType,
-		Duration:  validity.String(),
-		IssuedAt:  time.Now(),
-		AutoRenew: req.AutoRenew,
-		Origin:    "issued",
+		Domain:      domain,
+		Folder:      folder,
+		SANs:        sans,
+		KeyType:     lk.KeyType,
+		Duration:    validity.String(),
+		IssuedAt:    time.Now(),
+		AutoRenew:   req.AutoRenew,
+		Origin:      "issued",
+		Description: store.SanitizeDescription(req.Description),
 	}
 	if info, perr := store.ParseCert(crtPath); perr == nil {
 		meta.Serial = info.Serial
