@@ -30,10 +30,6 @@ func NewRouter(cfg config.Config) *http.ServeMux {
 		_, _ = w.Write(indexHTML)
 	})
 
-	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("ok"))
-	})
-
 	// 证书 / 私钥下载（路径沙箱在 handler 内部用 os.Root 兜底）
 	mux.HandleFunc("GET /download", withAuth(cfg, downloadHandler(cfg)))
 
