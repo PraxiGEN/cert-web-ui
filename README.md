@@ -49,16 +49,6 @@ docker compose up -d
 
 数据目录 `/data`（建议挂卷持久化）：根证书与私钥、吊销记录、CRL、历史根归档、每张证书一个文件夹（证书 + 私钥 + 元数据）。
 
-## 发版机制
-
-项目自带 GitHub Actions（`.github/workflows/release.yml`），发布到 GHCR 的三种方式：
-
-1. **改版本即发布**：修改 `config/config.go` 中 `APP_VERSION` 默认值并 push 到 main，版本有变自动打 tag 发布
-2. **手动触发**：Actions 页面 Run workflow，可指定版本号
-3. **直接打 tag**：push `v*` tag
-
-镜像构建多架构（amd64 + arm64），tag 形如 `ghcr.io/praxigen/cert-web-ui:v1.2.3` 与 `:latest`，版本号自动注入运行时。仓库无需配置任何 secret。
-
 ## 技术说明
 
 - Go 1.27，**零第三方依赖**（net/http + crypto/x509），进程内完成全部 PKI 操作
