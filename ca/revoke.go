@@ -23,8 +23,7 @@ type revokedRecord struct {
 	RevokedAt time.Time `json:"revoked_at"`
 }
 
-// Revoke 在本地吊销记录中登记该证书（按序列号），并重新生成 CRL。
-// 自建 CA 无 OCSP，吊销的落地形式就是 CA 目录下的 revoked.json + crl.pem。
+// Revoke 登记吊销（revoked.json）并重建 CRL；自建 CA 无 OCSP
 func Revoke(cfg config.Config, folder string) error {
 	swapMu.RLock()
 	defer swapMu.RUnlock()
@@ -42,8 +41,7 @@ func revokeLocked(cfg config.Config, folder string) error {
 		return fmt.Errorf("目录 %s 中未找到证书", folder)
 	}
 
-	// 导入证书不由本根签发，把它的序列号写进本根签名的 CRL 既不生效，
-	// 又会让 CRL 里出现解释不了的条目。
+	// 导入证书不由本根签发，写进本根 CRL 既不生效又产生无法解释的条目
 	if m, ok := store.ReadMeta(dir); ok && m.Origin == "imported" {
 		return fmt.Errorf("导入的外部证书不支持吊销（它不由本 CA 签发）")
 	}
@@ -157,10 +155,7 @@ func writeCRL(caHome string, root *RootCA, list []revokedRecord) error {
 	return writePEMFile(filepath.Join(caHome, crlName), "X509 CRL", der, 0o644)
 }
 
-// nextCRLNumber 产出严格单调递增的 CRL 序号。
-//
-// RFC 5280 要求同一签发者的 CRL 序号只能增大：直接用 Unix 秒作序号时，
-// 同一秒内连续两次生成（吊销后立刻重建）会撞出重复序号。
+// nextCRLNumber 保证 CRL 序号严格递增（RFC 5280）：同秒重建时 Unix 秒会撞号
 func nextCRLNumber(crlPath string, now time.Time) *big.Int {
 	cur := big.NewInt(now.Unix())
 	data, err := os.ReadFile(crlPath)

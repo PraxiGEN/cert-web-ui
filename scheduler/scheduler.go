@@ -95,10 +95,7 @@ func refreshCounts(cfg config.Config) {
 	mu.Unlock()
 }
 
-// ScanNow 立即触发一次扫描（异步执行），返回是否真的启动了。
-//
-// 已有一轮在跑时直接跳过：两轮扫描同时重签同一张证书会并发写同一个 .crt，
-// 落盘结果取决于谁的 rename 后到，中途还会产生「读到半张证书」的窗口。
+// ScanNow 异步触发扫描；已有扫描在跑时跳过，避免并发重签同一张证书
 func ScanNow(cfg config.Config) bool {
 	if !scanMu.TryLock() {
 		slog.Warn("已有自动续签扫描在执行，跳过本次触发")
@@ -122,8 +119,7 @@ func TryRun(cfg config.Config) bool {
 	return true
 }
 
-// runOnce 执行一轮扫描：统计证书并将临期 / 过期的自动续签证书逐个续签。
-// 调用方必须已持有 scanMu，本函数不再重复加锁。
+// runOnce 一轮扫描：统计并续签临期/过期的 auto_renew 证书；调用方须已持 scanMu
 func runOnce(cfg config.Config) {
 	start := time.Now()
 	mu.Lock()

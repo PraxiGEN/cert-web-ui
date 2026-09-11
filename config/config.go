@@ -30,6 +30,10 @@ var (
 	authorURL  = "https://github.com/PraxiGEN/cert-web-ui"
 )
 
+// Version 版本号：默认值随发版更新；CI 构建时经 -ldflags "-X cert-web-ui/config.Version=vX.Y.Z" 编译期覆盖。
+// 刻意不读取 APP_VERSION 环境变量——部署模板残留的旧环境变量会永久遮蔽镜像的真实版本。
+var Version = "v1.0.3"
+
 // Load 从环境变量读取配置，缺失时使用默认值
 func Load() Config {
 	home := getenv("CA_HOME", "/data")
@@ -41,7 +45,7 @@ func Load() Config {
 		UIPassword:  os.Getenv("UI_PASSWORD"),
 		Port:        getenv("PORT", "9280"),
 		IndexPath:   getenv("INDEX_HTML", "web/index.html"),
-		Version:     getenv("APP_VERSION", "v1.0.2"),
+		Version:     Version,
 
 		AuthorName: authorName,
 		AuthorURL:  authorURL,

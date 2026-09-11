@@ -97,7 +97,7 @@ func ListRootArchives(cfg config.Config) ([]RootArchive, error) {
 		if perr == nil {
 			item.HasKey = true
 		} else {
-			// 私钥缺失 / 不配对：证书本身仍可展示（人工排查用），但前端会置灰不可选
+			// 私钥缺失/不配对：仍可展示，但前端置灰不可选
 			c, rerr := readCertFile(filepath.Join(dir, rootCertName))
 			if rerr != nil {
 				slog.Warn("跳过无法解析的归档", "archive", e.Name(), "err", rerr)
@@ -132,8 +132,7 @@ func dirTimestamp(e os.DirEntry) time.Time {
 
 // RotateRoot 轮换根证书：归档旧根 → 生成新根 →（可选）全量重签。
 func RotateRoot(cfg config.Config, opts RotateOptions) (RootSwapResult, error) {
-	// 整段持写锁：换根期间不允许任何签发 / 续签 / 吊销插入。
-	// 否则会出现「证书已落盘，但签它的根已被归档」的孤儿。
+	// 持写锁：换根期间禁止签发/续签/吊销，避免孤儿证书
 	swapMu.Lock()
 	defer swapMu.Unlock()
 
@@ -173,10 +172,7 @@ func RotateRoot(cfg config.Config, opts RotateOptions) (RootSwapResult, error) {
 	return finishSwap(cfg, &res, opts.ReissueAll, "轮换")
 }
 
-// RollbackRoot 回滚根证书：把归档中的历史根恢复为当前根，并用它重签全部已签发证书。
-//
-// 语义上是「换一份根材料」而不是「一次性撤销」：当前根会被归档到新的归档目录，
-// 因此回滚本身也能被再次回滚，不存在单向门。
+// RollbackRoot 把归档中的历史根恢复为当前根；当前根会被再归档，回滚可再回滚
 func RollbackRoot(cfg config.Config, opts RollbackOptions) (RootSwapResult, error) {
 	swapMu.Lock()
 	defer swapMu.Unlock()
@@ -240,10 +236,7 @@ func finishSwap(cfg config.Config, res *RootSwapResult, reissueAll bool, verb st
 	return *res, nil
 }
 
-// activateRoot 把「归档当前根 → 写入新根 → 替换内存缓存」抽成公用流程，轮换与回滚共用。
-//
-// 顺序刻意是「材料备好 → 归档旧的 → 落盘新的」，任一步失败都把归档搬回来，
-// 避免出现「旧根已删、新根没写上」的信任锚真空。
+// activateRoot 备好新材料 → 归档旧根 → 落盘新根 → 换缓存；任一步失败把归档搬回，避免信任锚真空
 func activateRoot(cfg config.Config, newCert *x509.Certificate, newKey crypto.Signer) (*RootCA, string, error) {
 	newKeyDER, err := x509.MarshalPKCS8PrivateKey(newKey)
 	if err != nil {
@@ -255,9 +248,7 @@ func activateRoot(cfg config.Config, newCert *x509.Certificate, newKey crypto.Si
 		return nil, "", err
 	}
 
-	// 归档旧根材料（根证书 / 根私钥 / CRL）。
-	// revoked.json 不归档：吊销记录按序列号保存，与新根不冲突，
-	// 保留它才能让「导入证书」此前的吊销状态继续生效。
+	// 归档旧根材料（revoked.json 不归档：按序列号保存，与新根不冲突）
 	moved := make([]string, 0, 3)
 	for _, name := range []string{rootCertName, rootKeyName, crlName} {
 		src := filepath.Join(cfg.CAHome, name)
@@ -289,10 +280,7 @@ func activateRoot(cfg config.Config, newCert *x509.Certificate, newKey crypto.Si
 	return root, archiveDir, nil
 }
 
-// uniqueArchiveDir 创建归档目录，必要时追加序号保证唯一。
-//
-// 归档目录名只有秒级时间戳，同一秒内连续换根会撞名；一旦复用同名目录，
-// 第二次归档的 rename 会静默覆盖掉上一份根材料。
+// uniqueArchiveDir 秒级时间戳目录名可能撞名，追加序号避免静默覆盖上一份归档
 func uniqueArchiveDir(base string) (string, error) {
 	for i := 0; i < 1000; i++ {
 		dir := base
@@ -321,9 +309,7 @@ func rebuildCRL(cfg config.Config, root *RootCA) {
 	}
 }
 
-// reissueIssued 用当前根重签全部本系统签发的证书。导入证书无法重签，保持原样。
-//
-// 调用方已持有 swapMu 写锁，因此这里走不加锁的 renewLocked。
+// reissueIssued 用当前根重签全部 issued 证书（已持写锁，走不加锁 renewLocked）
 func reissueIssued(cfg config.Config, res *RootSwapResult) error {
 	entries, err := store.ListCerts(cfg.OutputBase, cfg.RenewBefore)
 	if err != nil {
@@ -353,10 +339,7 @@ func fillResult(res *RootSwapResult, root *RootCA) {
 	res.NewFingerprint = formatFingerprint(sum[:])
 }
 
-// resolveArchiveDir 把前端传来的归档目录收敛到 CA_HOME/archive 之内。
-//
-// 只取最后一段路径元素并做单层名校验，随后用 filepath.Join 拼接；
-// 校验通过的名字不可能再含有分隔符或 ".."，因此拼接结果必然落在归档目录内。
+// resolveArchiveDir 只取路径末段做单层名校验后拼接，结果必然落在 archive 目录内
 func resolveArchiveDir(cfg config.Config, raw string) (string, error) {
 	name := filepath.Base(strings.TrimSpace(raw))
 	if err := store.ValidLeafName(name); err != nil {

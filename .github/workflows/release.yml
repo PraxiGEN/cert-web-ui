@@ -1,17 +1,8 @@
-# 自动发布 Docker 镜像到 GHCR（ghcr.io）。三种触发方式：
-#
-# 1. 改版本自动发：修改 config/config.go 里 getenv("APP_VERSION", "vX.Y.Z") 的默认值
-#    并 push 到 main → 检测到该版本号尚无对应 tag → 自动打 tag 并发布。
-# 2. 手动发：Actions 页面 Run workflow，版本号可留空（=用 config.go 里的默认值），
-#    或填 v1.2.3 / 1.2.3 指定一个新版本。
-# 3. 直接打 tag：push v* tag → 立即发布该版本。
-#
-# 鉴权用 Actions 内置 GITHUB_TOKEN，仓库无需配置任何 secret。
-# 注意：内置 GITHUB_TOKEN 打的 tag 不会再触发新的 workflow run（GitHub 防递归），
-# 因此「打 tag」与「构建发布」必须串在本 workflow 内（docker job needs resolve）。
-#
-# 首次使用：仓库 Settings → Actions → General → Workflow permissions 设为
-# 「Read and write permissions」（打 tag 与写 packages 都需要）。
+# 自动发布 Docker 镜像到 GHCR。触发：① push main 且 config.go 的 var Version 有变自动打 tag 发布；
+# ② workflow_dispatch 手动（可指定版本）；③ push v* tag。
+# 版本号经 -ldflags 编译期烙进二进制（不走运行时环境变量）；鉴权用内置 GITHUB_TOKEN。
+# GITHUB_TOKEN 打的 tag 不触发新 run（防递归），故打 tag 与构建须串在本 workflow 内。
+# 首次使用：Settings → Actions → Workflow permissions 设为 Read and write permissions。
 name: release
 
 on:
@@ -23,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "版本号（如 v1.2.3；留空 = 使用 config.go 里的 APP_VERSION）"
+        description: "版本号（如 v1.2.3；留空 = 使用 config.go 里的 var Version）"
         required: false
         type: string
 
@@ -51,7 +42,7 @@ jobs:
           if [ -n "$INPUT_VERSION" ]; then
             VER="$INPUT_VERSION"
           else
-            VER=$(grep -oP '(?<=APP_VERSION", ")[^"]+' config/config.go)
+            VER=$(grep -oP 'var Version = "\K[^"]+' config/config.go)
             echo "从 config.go 读到版本: $VER"
           fi
           TAG="v${VER#v}" # 统一成 v 前缀

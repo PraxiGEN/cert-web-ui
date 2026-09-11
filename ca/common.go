@@ -24,11 +24,7 @@ type IssueResult struct {
 	KeyFile string `json:"key_file"`
 }
 
-// SanitizeFolder 清洗文件夹名：只放行英文字母、数字、连字符、下划线。
-//
-// 与前端输入校验保持同一套字符集，并在服务端强制执行。白名单写法顺带
-// 把 "." / ".." / "/" / "\" 这些能改变路径语义的输入直接抹掉，
-// 而不是像旧实现那样只做两次 ReplaceAll 后就把结果当可信名称使用。
+// SanitizeFolder 白名单清洗文件夹名（字母/数字/连字符/下划线），与前端校验同一字符集
 func SanitizeFolder(folder string) string {
 	var b strings.Builder
 	for _, r := range strings.TrimSpace(folder) {

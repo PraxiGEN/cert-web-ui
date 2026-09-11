@@ -7,8 +7,7 @@ import (
 	"cert-web-ui/config"
 )
 
-// Health 探测内置 CA 是否就绪（根证书可用且未过期）。
-// 自建形态下无需网络探测：只要根证书能加载即可签发。
+// Health 探测内置 CA 就绪：根证书可加载且未过期即可，无需网络探测
 func Health(cfg config.Config) (bool, string) {
 	root, err := InitRoot(cfg)
 	if err != nil {

@@ -32,8 +32,7 @@ const (
 	crlName      = "crl.pem"
 )
 
-// RootCA 是进程内加载的自建根 CA。
-// 根私钥只会由本程序生成（默认 EC P-256，可由 CA_ROOT_KEY_TYPE 配置），不导入外部根。
+// RootCA 进程内自建根 CA；根私钥只由本程序生成，不导入外部根
 type RootCA struct {
 	Cert *x509.Certificate
 	Key  crypto.Signer
@@ -43,14 +42,11 @@ var (
 	rootMu    sync.Mutex
 	rootCache *RootCA
 
-	// swapMu 把「切换根材料」与「用根签发」隔开：签发 / 续签 / 吊销取读锁，
-	// 轮换 / 回滚取写锁。锁序恒为 swapMu → rootMu，不可颠倒。
+	// swapMu 隔离「切根」与「用根签发」：签发类取读锁、轮换类取写锁；锁序 swapMu → rootMu
 	swapMu sync.RWMutex
 )
 
-// RootCertPath 返回根证书的固定路径（CA_HOME/root_ca.crt）。
-// 加载、生成、归档、下载、展示全部经由本函数取路径，避免出现
-// 「一处按配置读、一处按目录拼」的分叉。
+// RootCertPath 返回 CA_HOME/root_ca.crt，全部路径统一由此取，避免分叉
 func RootCertPath(cfg config.Config) string {
 	return filepath.Join(cfg.CAHome, rootCertName)
 }

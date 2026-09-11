@@ -232,9 +232,7 @@
         .badge.auto { background: rgba(21,101,192,0.14); color: var(--auto); }
         .badge.rev { background: rgba(142,36,170,0.14); color: var(--rev); }
         .badge.imp { background: rgba(138,148,166,0.16); color: var(--folder); }
-        /* 操作列：flex 换行，横竖间距一致（窄屏换行后不再贴住上一行）。
-           必须挂在内层 div 上，不能直接挂 <td>：td 一旦成为 flex 容器就不再是 table-cell，
-           该列的行分隔线会断开（即此前「分割线对不齐」的根因）。 */
+        /* 操作列：flex 挂内层 div 而非 <td>（td 变 flex 就不再是 table-cell，行分隔线会断开） */
         .actions { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
         .actions a, .actions button { margin: 0; padding: 5px 9px; font-size: 12px; }
         /* 状态列：状态标签竖向堆叠，每条一行，颜色区分（正常/临期/已过期/已吊销 + 自动续签 + 导入） */
@@ -412,8 +410,7 @@
         .dock-opt[data-dock="right"] .dock-thumb::after { right: 3px; top: 50%; transform: translateY(-50%); width: 4px; height: 16px; }
         .dock-opt[data-dock="top"] .dock-thumb::after { left: 4px; right: 4px; top: 3px; height: 4px; }
 
-        /* ===== Dock 位置：下（默认）/ 左 / 右 / 上 =====
-           左/右：竖排悬浮胶囊；上：顶栏下方「靠左」的横向状态栏（sticky 紧贴 header 底部）。 */
+        /* ===== Dock 位置：下（默认）/ 左 / 右 / 上（上=顶栏下方靠左的 sticky 状态栏） ===== */
         :root[data-dock="left"] .dock { left: 20px; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; max-width: none; max-height: calc(100vh - 48px); }
         :root[data-dock="right"] .dock { right: 20px; left: auto; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; max-width: none; max-height: calc(100vh - 48px); }
         /* 左右竖向：加宽加高，图标略大 */
@@ -426,13 +423,10 @@
         :root[data-dock="top"] .dock-item .dock-icon svg { width: 18px; height: 18px; }
         :root[data-dock="top"] .content { padding-bottom: 28px; }
 
-        /* ===== 全局轻提示（Toast）：替代原生 alert =====
-           右下角浮层，自动消失、可点击提前关闭；窄屏改到顶部，避免遮挡底部 Dock。 */
+        /* ===== 全局轻提示（Toast）：替代原生 alert，右下角浮层自动消失，窄屏改到顶部 ===== */
         .toast-wrap { position: fixed; right: 22px; bottom: 22px; z-index: 200; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; max-width: min(400px, calc(100vw - 44px)); }
         :root[data-dock="right"] .toast-wrap { right: 156px; }
-        /* 基础态直接可见：入场动画只是叠加的锦上添花。
-           若改成 opacity:0 + transition 入场，在动画时钟不推进的环境（无头渲染、
-           降级合成）下会永久停在透明态，通知等于消失。 */
+        /* 基础态直接可见：opacity:0+transition 入场在动画时钟不推进的环境（无头渲染）会永久隐形 */
         .toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px 12px 14px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--card-bg); color: var(--text); font-size: 13.5px; line-height: 1.55; box-shadow: 0 10px 30px rgba(15,23,42,0.16), 0 2px 6px rgba(15,23,42,0.08); cursor: pointer; animation: toastIn .22s ease; }
         .toast.out { opacity: 0; transform: translateY(6px); transition: opacity .2s ease, transform .2s ease; }
         @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } }
@@ -448,8 +442,7 @@
         .toast.warn .toast-ico { color: var(--warn); }
         .toast.info .toast-ico { color: var(--accent); }
 
-        /* ===== 应用内确认弹窗：替代原生 confirm =====
-           z-index 高于所有面板，因其可能从面板内部（轮换 / 回滚）二次弹出。 */
+        /* ===== 应用内确认弹窗：替代原生 confirm，z-index 高于面板（可从面板内二次弹出） ===== */
         .confirm-overlay { position: fixed; inset: 0; z-index: 120; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .confirm-panel { width: 100%; max-width: 430px; max-height: calc(100vh - 40px); overflow: auto; padding: 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 24px 60px rgba(15,23,42,0.4); }
         .confirm-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--text); }
@@ -469,8 +462,7 @@
             :root[data-dock="right"] .content { padding-right: 138px; }
         }
 
-        /* 平板 / 小屏（≤960px）：放开整页最小宽度——否则 761~960px 区间会强制整页横向滚动，
-           与 ≤760px 的卡片布局形成体验断崖。放开后由列表卡片「内部」横向滚动承压。 */
+        /* 平板/小屏（≤960px）：放开整页最小宽度，横向滚动由列表卡片内部承压 */
         @media (max-width: 960px) {
             body { min-width: 0; }
             #expiringList { overflow-x: auto; }
@@ -935,8 +927,7 @@
     }
 
     /* ---------- 应用内确认弹窗 ---------- */
-    // appConfirm({ title, message, confirmText, danger }) -> Promise<boolean>
-    // Esc / 点遮罩 / 取消 = false，Enter / 确认 = true
+    // appConfirm({title,message,confirmText,danger}) -> Promise<boolean>；Esc/遮罩/取消=false，Enter/确认=true
     function appConfirm(opts) {
         opts = opts || {};
         return new Promise(function (resolve) {
@@ -1042,9 +1033,7 @@
         flashBtn(btn, (await copyToClipboard(text)) ? '已复制' : '失败');
     }
 
-    // 复制文件内容（证书 / 私钥 PEM）。
-    // 只接收证书名 + 类别，URL 在函数内部从 CERTS 取：
-    // 路径里可能含引号类字符，绝不能拼进 onclick 属性字符串。
+    // copyFile 只接收证书名+类别，URL 内部从 CERTS 取——路径绝不能拼进 onclick 属性（存储型 XSS）
     async function copyFile(name, kind, btn) {
         const c = CERTS.find(x => x.name === name) || {};
         const url = dlHref(kind === 'key' ? c.key : c.crt);
@@ -1137,8 +1126,7 @@
         } catch (e) { console.error(e); }
         AUTH_REQUIRED = need;
         if (!need) { loadAll(); return; }
-        // 已存密码（记住我 → localStorage；未勾选 → sessionStorage）则静默验证实现免登录；
-        // 失效（如后端改了密码）则清掉并显示登录页
+        // 已存密码（记住我→localStorage / 否则 sessionStorage）则静默验证免登录，失效回登录页
         let saved = '';
         try {
             saved = localStorage.getItem(PWD_KEY) || '';
@@ -1196,8 +1184,7 @@
         document.getElementById('stAuto').textContent = auto;
     }
 
-    // 顶栏 CA 就绪指示。CA 状态不再单独成卡——就绪状态在顶栏圆点，
-    // CN/到期在「根证书」卡，CA 目录/已吊销/版本在首页「运行信息」，整卡属于重复展示。
+    // 顶栏 CA 就绪指示：不单独成卡（与顶栏圆点、根证书卡、运行信息重复展示）
     function renderCaBadge() {
         const sc = document.getElementById('sideCa');
         if (!sc) return;
@@ -1732,10 +1719,7 @@
     })();
 
     // ===== 根证书高危操作：轮换 / 回滚 =====
-    // 统一入口：后端管理页「管理」按钮 → 管理面板 → 轮换面板 / 回滚面板。
-    // 每种操作都有多道门槛：① 面板内逐条警告 + 影响面数字
-    //   ② 逐字输入「当前」根 CN 才解锁按钮 ③ 浏览器原生 confirm 再念一遍影响面。
-    // 服务端另有 confirm 字段硬校验（`/rotate` 与 `/rollback` 各自独立校验）。
+    // 多重门槛：面板警告 + 逐字输入当前根 CN + 原生 confirm；服务端另有 confirm 硬校验。
     let SWAPPING = false;   // 切换根期间（生成 RSA 根可能耗时数秒）禁止关闭面板
     let ARCHIVES = [];      // 最近一次拉取到的历史根归档
 

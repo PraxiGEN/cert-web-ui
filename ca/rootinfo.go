@@ -35,8 +35,7 @@ type RootInfo struct {
 	Error        string    `json:"error,omitempty"`
 }
 
-// RootInfoOf 读取并解析根证书文件。缺失/错误都写入结构体（不返回 error），
-// 便于前端统一展示状态。
+// RootInfoOf 解析根证书详情；缺失/错误写入 Error 字段而非返回 error，便于前端统一展示
 func RootInfoOf(cfg config.Config) RootInfo {
 	path := RootCertPath(cfg)
 	info := RootInfo{Path: path}

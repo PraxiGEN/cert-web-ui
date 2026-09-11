@@ -5,12 +5,7 @@ import (
 	"path/filepath"
 )
 
-// WriteFileAtomic 以「同目录临时文件 → fsync → rename」的方式原子落盘。
-//
-// 不能直接用 os.WriteFile：进程被 kill 或宿主机断电时，写了一半的文件会留在磁盘上。
-// 对根私钥、根证书、revoked.json 这类文件来说，半截内容意味着信任锚或吊销列表
-// 在没有任何报错的情况下静默损坏。rename 在同一文件系统内是原子的，
-// 因此读方要么看到完整的旧文件，要么看到完整的新文件。
+// WriteFileAtomic 原子落盘（临时文件 → fsync → rename）：半截文件等于信任锚静默损坏
 func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -22,7 +17,7 @@ func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	tmp := f.Name()
-	// 任何提前返回的路径都要清掉临时文件；rename 成功后置空以避免误删目标。
+	// rename 成功后置空 tmp，避免 defer 误删目标文件
 	defer func() {
 		if tmp != "" {
 			_ = os.Remove(tmp)

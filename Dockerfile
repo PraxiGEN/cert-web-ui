@@ -8,14 +8,16 @@ COPY ca ./ca
 COPY api ./api
 COPY main.go ./main.go
 COPY scheduler ./scheduler
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/cert-web-ui .
+ARG APP_VERSION
+RUN set -eux; \
+    if [ -n "${APP_VERSION:-}" ]; then \
+      CGO_ENABLED=0 GOOS=linux go build -ldflags "-X cert-web-ui/config.Version=${APP_VERSION:-}" -o /out/cert-web-ui .; \
+    else \
+      CGO_ENABLED=0 GOOS=linux go build -o /out/cert-web-ui .; \
+    fi
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
-# 版本号唯一权威 = config/config.go 的 APP_VERSION 默认值；
-# 此处不设默认，CI 发版经 build-arg 显式传入，本地构建留空时回落 config.go
-ARG APP_VERSION
-ENV APP_VERSION=${APP_VERSION}
 WORKDIR /app
 COPY --from=build /out/cert-web-ui /app/cert-web-ui
 COPY web ./web
