@@ -30,17 +30,19 @@ func NewRouter(cfg config.Config) *http.ServeMux {
 		_, _ = w.Write(indexHTML)
 	})
 
-	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("ok"))
-	})
-
 	// 证书 / 私钥下载（路径沙箱在 handler 内部用 os.Root 兜底）
 	mux.HandleFunc("GET /download", withAuth(cfg, downloadHandler(cfg)))
 
-	// 无需鉴权：前端靠它判断是否需要弹出密码栏，因此只暴露一个布尔值。
+	// 无需鉴权：前端靠它判断是否展示登录页，因此只暴露一个布尔值。
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"auth_required": cfg.UIPassword != ""})
 	})
+
+	// 登录页密码校验：正确返回 ok，错误由 withAuth 统一 401。
+	// 只读接口，跨站无风险，不需要 CSRF 保护。
+	mux.HandleFunc("GET /api/auth/check", withAuth(cfg, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string]any{"ok": true})
+	}))
 
 	mux.HandleFunc("GET /api/certs", withAuth(cfg, listHandler(cfg)))
 	mux.HandleFunc("GET /api/certs/{name}", withAuth(cfg, detailHandler(cfg)))

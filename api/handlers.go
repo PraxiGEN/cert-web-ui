@@ -35,15 +35,30 @@ func writeError(w http.ResponseWriter, msg string) {
 }
 
 // withAuth 是访问门禁中间件：配置了 UI_PASSWORD 时校验 X-UI-Password 头或 ui_password 查询参数。
+// 连续 5 次失败后按 IP 锁定 30 秒（见 authlimit.go），缓解暴力枚举。
 func withAuth(cfg config.Config, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if cfg.UIPassword != "" && !passwordOK(r, cfg.UIPassword) {
+		if cfg.UIPassword == "" {
+			h(w, r)
+			return
+		}
+		ip := clientIP(r)
+		if blocked, remain := authLimit.blocked(ip); blocked {
+			w.Header().Set("Retry-After", fmt.Sprint(remain))
+			slog.Warn("访问密码尝试过于频繁，已临时锁定", "remote", ip)
+			writeJSONStatus(w, http.StatusTooManyRequests,
+				map[string]any{"success": false, "error": fmt.Sprintf("尝试次数过多，请 %d 秒后再试", remain)})
+			return
+		}
+		if !passwordOK(r, cfg.UIPassword) {
+			authLimit.recordFail(ip)
 			slog.Warn("访问密码校验失败",
 				"remote", r.RemoteAddr, "method", r.Method, "path", r.URL.Path)
 			writeJSONStatus(w, http.StatusUnauthorized,
 				map[string]any{"success": false, "error": "访问密码错误"})
 			return
 		}
+		authLimit.recordOK(ip)
 		h(w, r)
 	}
 }
