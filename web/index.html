@@ -602,9 +602,11 @@
                             <input type="text" name="name" placeholder="例如 my-server" autocomplete="off">
                             <div class="err-text" id="nameErr">名称只能包含英文字母、数字、连字符(-)和下划线(_)</div>
                         </div>
+                        <div>
+                            <label>描述（可选，支持中文）</label>
+                            <input type="text" name="description" maxlength="200" placeholder="例如：NAS 面板证书" autocomplete="off">
+                        </div>
                     </div>
-                    <label>描述（可选，支持中文）</label>
-                    <input type="text" name="description" maxlength="200" placeholder="例如：NAS 面板证书" autocomplete="off">
                     <label>域名 / SAN（每行一个，第一行作为证书主域名 CN）</label>
                     <textarea name="sans" rows="3" placeholder="example.com&#10;192.168.1.100"></textarea>
                     <p class="hint">至少填一个；支持泛域名如 *.home.lan，自动识别 DNS / IP</p>
@@ -642,10 +644,16 @@
                 <h3>导入外部证书（归档）</h3>
                 <p class="hint">导入由其他 CA 签发的证书，仅用于集中查看与到期提醒；不支持续签与吊销。</p>
                 <form id="importForm">
-                    <label>名称（文件夹名，仅英文/数字/连字符）*</label>
-                    <input type="text" name="name" placeholder="例如 imported-server" autocomplete="off">
-                    <label>描述（可选，支持中文）</label>
-                    <input type="text" name="description" maxlength="200" placeholder="例如：从旧 CA 迁移的网关证书" autocomplete="off">
+                    <div class="row">
+                        <div>
+                            <label>名称（文件夹名，仅英文/数字/连字符）*</label>
+                            <input type="text" name="name" placeholder="例如 imported-server" autocomplete="off">
+                        </div>
+                        <div>
+                            <label>描述（可选，支持中文）</label>
+                            <input type="text" name="description" maxlength="200" placeholder="例如：从旧 CA 迁移的网关证书" autocomplete="off">
+                        </div>
+                    </div>
                     <label>证书内容（PEM，含 -----BEGIN CERTIFICATE-----）*</label>
                     <textarea name="crt" rows="6" placeholder="粘贴证书 PEM 内容"></textarea>
                     <label>私钥（可选，PEM）</label>
