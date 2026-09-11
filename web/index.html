@@ -248,6 +248,9 @@
         #certList th:nth-child(3) { width: 18%; }
         #certList th:nth-child(4) { width: 18%; }
         #certList th:nth-child(5) { width: 28%; }
+        /* 首页即将到期：四列等分 */
+        #expiringList table { table-layout: fixed; }
+        #expiringList th { width: 25%; }
         #certList td { word-break: break-word; }
         /* 手机端（≤760px 由 JS 切换渲染）：证书卡片式布局；桌面端仍用表格 */
         .cert-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -1407,6 +1410,7 @@
                 const exp = fmtExpiry(c);
                 return '<div class="exp-item">' +
                     '<div class="exp-main"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' + certBadges(c) + '</div>' +
+                    (c.description ? '<div class="exp-sub">' + escapeHtml(c.description) + '</div>' : '') +
                     '<div class="exp-sub">' + escapeHtml(exp.days) + ' · 到期 ' + escapeHtml(exp.date) + '</div>' +
                     '</div>';
             }).join('');
@@ -1416,7 +1420,8 @@
         top.forEach(c => {
             const exp = fmtExpiry(c);
             r += '<tr><td><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
-                    '<div class="folder">' + escapeHtml(c.folder) + '</div></td>' +
+                    '<div class="folder">' + escapeHtml(c.folder) + '</div>' +
+                    (c.description ? '<div class="folder dom-desc">' + escapeHtml(c.description) + '</div>' : '') + '</td>' +
                 '<td><div class="state">' + certBadges(c) + '</div></td>' +
                 '<td><span class="badge ' + exp.cls + '">' + escapeHtml(exp.days) + '</span></td>' +
                 '<td class="folder">' + escapeHtml(exp.date) + '</td></tr>';
