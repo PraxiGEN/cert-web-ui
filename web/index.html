@@ -1484,6 +1484,9 @@
         const el = document.getElementById('renewInfo');
         const r = RENEW;
         if (!r) { el.textContent = '加载中…'; return; }
+        const failBadge = (r.failed || 0) > 0
+            ? '成功 ' + (r.renewed || 0) + ' · <span style="color:var(--err)">失败 ' + r.failed + '</span>'
+            : '成功 ' + (r.renewed || 0) + ' · 失败 0';
         el.innerHTML =
             kvRow('扫描间隔', escapeHtml(r.interval || '—')) +
             kvRow('提前阈值', escapeHtml(r.before || '—')) +
@@ -1491,7 +1494,14 @@
             kvRow('下次预计', r.next_scan ? escapeHtml(fmtTime(r.next_scan)) : '—') +
             kvRow('证书总数', String(r.total || 0)) +
             kvRow('自动续签', String(r.auto_renew || 0)) +
-            kvRow('上次续签', '成功 ' + (r.renewed || 0) + ' · 失败 ' + (r.failed || 0)) +
+            kvRow('上次续签', failBadge) +
+            ((r.failures && r.failures.length)
+                ? '<div style="margin:6px 0 0;padding:6px 8px;border:1px solid var(--err);border-radius:8px;background:color-mix(in srgb, var(--err) 8%, transparent)">' +
+                  r.failures.map(f =>
+                      '<div style="word-break:break-all"><span style="color:var(--stat-label)">' +
+                      escapeHtml(f.name || '扫描') + '：</span>' + escapeHtml(f.error) + '</div>').join('') +
+                  '</div>'
+                : '') +
             (r.running ? kvRow('状态', '<span class="badge warn">扫描中…</span>') : '');
     }
 
