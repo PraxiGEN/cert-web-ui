@@ -200,6 +200,8 @@
         .result { margin-top: 16px; padding: 14px; background: var(--result-ok-bg); border-radius: 6px; border-left: 4px solid var(--result-ok-border); font-size: 14px; }
         .result.error { background: var(--result-err-bg); border-left-color: var(--result-err-border); }
         .hint { font-size: 12px; color: var(--hint); margin-top: 4px; }
+        .edit-banner { margin: 0 0 4px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 6px; background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: 13px; }
+        .edit-banner a { margin-left: 8px; }
         .err-text { color: var(--err); font-size: 12px; margin-top: 4px; display: none; }
         /* 统计卡片 */
         .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
@@ -596,6 +598,7 @@
             <div class="card subpanel" data-sub="issue">
                 <h3>签发新证书</h3>
                 <form id="certForm">
+                    <div class="edit-banner hidden" id="editBanner">正在编辑重签 <strong id="editName"></strong>：提交后将生成新私钥并替换该目录下的证书与私钥（吊销状态不保留）。<a href="javascript:void(0)" onclick="cancelEdit()">取消编辑</a></div>
                     <div class="row">
                         <div>
                             <label>名称（文件夹名，仅英文/数字/连字符）*</label>
@@ -1212,6 +1215,54 @@
     function showSub(sub) {
         document.querySelectorAll('.subtab').forEach(t => t.classList.toggle('active', t.dataset.sub === sub));
         document.querySelectorAll('.subpanel').forEach(p => p.classList.toggle('hidden', p.dataset.sub !== sub));
+        if (sub !== 'issue' && EDITING) cancelEdit();
+    }
+
+    // 编辑重签：预填签发表单，名称锁定；提交走 /api/certs/{name}/reissue 原位替换
+    let EDITING = null;
+
+    // 有效期下拉只有 4 档，metadata 存的是实际时长（可能被根寿命压过），取最接近的一档
+    function pickDuration(metaDur) {
+        const m = /(\d+)h/.exec(metaDur || '');
+        const hours = m ? parseInt(m[1], 10) : 0;
+        if (!hours) return '8760h';
+        const opts = [...document.querySelectorAll('#certForm [name=duration] option')].map(o => parseInt(o.value, 10));
+        let best = opts[0];
+        for (const o of opts) if (Math.abs(o - hours) < Math.abs(best - hours)) best = o;
+        return best + 'h';
+    }
+
+    function startEdit(name) {
+        const dec = decodeURIComponent(name);
+        const c = CERTS.find(x => x.name === dec);
+        if (!c) { toast('未找到该证书，请刷新列表后重试', 'err'); return; }
+        EDITING = dec;
+        showSub('issue');
+        const f = document.getElementById('certForm');
+        const nameInput = f.querySelector('[name=name]');
+        nameInput.value = dec;
+        nameInput.disabled = true;
+        f.querySelector('[name=description]').value = c.description || '';
+        f.querySelector('[name=sans]').value = (c.sans || []).join('\n');
+        f.querySelector('[name=key_type]').value = c.key_type || 'ec-p256';
+        f.querySelector('[name=duration]').value = pickDuration(c.duration);
+        f.querySelector('[name=auto_renew]').checked = !!c.auto_renew;
+        document.getElementById('editName').textContent = dec;
+        document.getElementById('editBanner').classList.remove('hidden');
+        document.getElementById('submitBtn').textContent = '重新签发';
+        document.getElementById('result').innerHTML = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        EDITING = null;
+        const f = document.getElementById('certForm');
+        const nameInput = f.querySelector('[name=name]');
+        nameInput.disabled = false;
+        f.reset();
+        f.querySelector('[name=duration]').value = '8760h';
+        document.getElementById('editBanner').classList.add('hidden');
+        document.getElementById('submitBtn').textContent = '签发证书';
     }
 
     function renderStats() {
@@ -1280,6 +1331,7 @@
         const manageBtns = (c.origin === 'imported')
             ? ''
             : '<button class="ghost" onclick="doRenew(\'' + n + '\', this)">续签</button>' +
+              '<button class="ghost" onclick="startEdit(\'' + n + '\')">编辑重签</button>' +
               '<button class="ghost" onclick="doRevoke(\'' + n + '\', this)">吊销</button>';
         return '<a href="' + dlHref(c.crt) + '">下载证书</a>' + keyBtn + manageBtns +
             '<button class="ghost" onclick="toggleDetail(\'' + n + '\', this)">详情</button>' +
@@ -1628,12 +1680,13 @@
 
     document.getElementById('certForm').onsubmit = async function (e) {
         e.preventDefault();
+        const editing = EDITING;
         const btn = document.getElementById('submitBtn');
-        btn.disabled = true; btn.textContent = '签发中...';
+        btn.disabled = true; btn.textContent = editing ? '重新签发中...' : '签发中...';
         const resultDiv = document.getElementById('result');
         resultDiv.innerHTML = '';
         const f = e.target;
-        const name = f.name.value.trim();
+        const name = editing || f.name.value.trim();
         if (name && !/^[A-Za-z0-9_-]+$/.test(name)) {
             document.getElementById('nameErr').style.display = 'block';
             btn.disabled = false; btn.textContent = '签发证书'; return;
@@ -1647,21 +1700,22 @@
             description: f.description.value
         };
         try {
-            const res = await apiFetch('/api/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const url = editing ? '/api/certs/' + encodeURIComponent(editing) + '/reissue' : '/api/issue';
+            const res = await apiFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const json = await res.json();
             if (json.success) {
-                resultDiv.innerHTML = '<div class="result"><strong>✅ 签发成功</strong><br>域名：' + escapeHtml(json.domain) +
+                resultDiv.innerHTML = '<div class="result"><strong>' + (editing ? '✅ 重新签发成功' : '✅ 签发成功') + '</strong><br>域名：' + escapeHtml(json.domain) +
                     '<br>路径：<code>' + escapeHtml(json.path) + '</code></div>';
-                f.reset();
-                document.querySelector('#certForm [name=duration]').value = '8760h';
-                loadCerts();
+                if (editing) { cancelEdit(); loadCerts(); }
+                else { f.reset(); document.querySelector('#certForm [name=duration]').value = '8760h'; loadCerts(); }
             } else {
-                resultDiv.innerHTML = '<div class="result error"><strong>❌ 签发失败</strong><br><pre style="white-space:pre-wrap;word-break:break-all;margin:6px 0 0">' + escapeHtml(json.error) + '</pre></div>';
+                resultDiv.innerHTML = '<div class="result error"><strong>' + (editing ? '❌ 重新签发失败' : '❌ 签发失败') + '</strong><br><pre style="white-space:pre-wrap;word-break:break-all;margin:6px 0 0">' + escapeHtml(json.error) + '</pre></div>';
             }
         } catch (err) {
             resultDiv.innerHTML = '<div class="result error"><strong>❌ 请求错误</strong><br>' + escapeHtml(String(err)) + '</div>';
         } finally {
-            btn.disabled = false; btn.textContent = '签发证书';
+            btn.disabled = false;
+            if (!EDITING) btn.textContent = '签发证书';
         }
     };
 
