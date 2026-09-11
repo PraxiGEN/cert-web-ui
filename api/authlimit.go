@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-// authLimiter 按来源 IP 记录密码失败次数：连续失败达到阈值后临时锁定，
-// 缓解端口暴露时对访问密码的暴力枚举。仅进程内状态，重启即清零。
+// authLimiter 按 IP 记录密码失败次数，连续 5 次锁 30 秒；进程内状态，重启清零
 type authLimiter struct {
 	mu      sync.Mutex
 	fails   map[string]*failState
@@ -23,8 +22,7 @@ type failState struct {
 
 var authLimit = &authLimiter{fails: make(map[string]*failState), max: 5, lockFor: 30 * time.Second}
 
-// clientIP 取来源 IP（RemoteAddr 去端口）。不信任 X-Forwarded-For：
-// 直连场景下该头可被任意伪造，用它做限流键等于没有限流。
+// clientIP 取 RemoteAddr 来源 IP；不信任 X-Forwarded-For（可伪造，限流即失效）
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
