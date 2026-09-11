@@ -21,5 +21,5 @@ WORKDIR /app
 COPY --from=build /out/cert-web-ui /app/cert-web-ui
 COPY web ./web
 
-EXPOSE 16850
+EXPOSE 9280
 CMD ["/app/cert-web-ui"]

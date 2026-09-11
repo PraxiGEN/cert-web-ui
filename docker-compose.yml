@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     network_mode: bridge
     ports:
-      - "16850:16850"
+      - "9280:9280"
     volumes:
       # CA 数据目录持久化：根证书 / 根私钥 / 吊销记录 / CRL 与证书输出都在这里
       # 首次启动会自动生成 EC P-256 根证书（有效期 10 年）
