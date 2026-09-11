@@ -32,11 +32,7 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 // Unwrap 透传底层 ResponseWriter，让 http.ResponseController 之类的能力仍然可用。
 func (r *statusRecorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }
 
-// LoggingMiddleware 记录每个请求的访问日志：远程地址、方法、路径、状态码、响应大小、耗时。
-//
-// 路径等来自请求的字段一律交给 slog 结构化输出。slog 会为含空格或换行的值加引号，
-// 因此请求路径里编码出来的 %0A 无法再伪造出额外的日志行——
-// 此前用 log.Printf 直接拼接时这是可被利用的日志注入。
+// LoggingMiddleware 访问日志；字段走 slog 结构化输出，含换行的路径无法伪造日志行
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
