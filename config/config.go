@@ -41,7 +41,7 @@ func Load() Config {
 		UIPassword:  os.Getenv("UI_PASSWORD"),
 		Port:        getenv("PORT", "9280"),
 		IndexPath:   getenv("INDEX_HTML", "web/index.html"),
-		Version:     getenv("APP_VERSION", "v1.0.0"),
+		Version:     getenv("APP_VERSION", "v1.0.1"),
 
 		AuthorName: authorName,
 		AuthorURL:  authorURL,
