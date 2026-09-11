@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cert Web UI · 证书管理</title>
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #1f2733;
+            --subtitle: #6b7689;
+            --label: #1f2733;
+            --card-bg: #ffffff;
+            --border: #eef1f6;
+            --input-bg: #ffffff;
+            --input-border: #d7dde7;
+            --input-text: #1f2733;
+            --stat-label: #6b7689;
+            --folder: #8a94a6;
+            --th: #6b7689;
+            --detail-bg: #f7f9fb;
+            --detail-text: #333333;
+            --kv: #44506a;
+            --code-bg: #eef1f6;
+            --empty: #9aa4b5;
+            --hint: #9aa4b5;
+            --err: #d33;
+            --ghost-bg: #eef1f6;
+            --ghost-text: #33405a;
+            --ghost-hover: #e2e7f0;
+            --pwbar-bg: #fff8e1;
+            --pwbar-border: #ffe082;
+            --result-ok-bg: #e8f5e9;
+            --result-ok-border: #4caf50;
+            --result-err-bg: #ffebee;
+            --result-err-border: #f44336;
+            --accent: #2f6fed;
+            --accent-hover: #245ad0;
+            --accent-disabled: #9bb6e6;
+            --danger: #e0524d;
+            --danger-hover: #c93c37;
+            --ok: #2e7d32;
+            --warn: #e07700;
+            --exp: #c62828;
+            --auto: #1565c0;
+            --rev: #8e24aa;
+            --ok-num: #2e7d32;
+            --warn-num: #e07700;
+            --exp-num: #c62828;
+            --auto-num: #1565c0;
+        }
+        /* 深色模式：跟随系统（未强制浅色时） */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0f1420;
+                --text: #e8edf5;
+                --subtitle: #8a98b5;
+                --label: #c4cde0;
+                --card-bg: #161d2e;
+                --border: #243049;
+                --input-bg: #0f1626;
+                --input-border: #2c3a55;
+                --input-text: #e8edf5;
+                --stat-label: #8a98b5;
+                --folder: #7e8cb0;
+                --th: #8a98b5;
+                --detail-bg: #0f1626;
+                --detail-text: #c4cde0;
+                --kv: #b6c2da;
+                --code-bg: #0f1626;
+                --empty: #7e8cb0;
+                --hint: #7e8cb0;
+                --err: #ff8a80;
+                --ghost-bg: #1c2740;
+                --ghost-text: #c4cde0;
+                --ghost-hover: #243357;
+                --pwbar-bg: #2a2410;
+                --pwbar-border: #5a4a1a;
+                --result-ok-bg: #142a18;
+                --result-ok-border: #2e7d32;
+                --result-err-bg: #2c1414;
+                --result-err-border: #f44336;
+                --accent: #3b7bff;
+                --accent-hover: #2f6fed;
+                --accent-disabled: #4a5a7a;
+                --danger: #e0524d;
+                --danger-hover: #c93c37;
+                --ok: #7ee0a0;
+                --warn: #ffb74d;
+                --exp: #ff8a80;
+                --auto: #7ec8ff;
+                --rev: #ce93d8;
+                --ok-num: #5fd07a;
+                --warn-num: #ffb74d;
+                --exp-num: #ff8a80;
+                --auto-num: #64b5f6;
+            }
+        }
+        /* 深色模式：手动强制 */
+        :root[data-theme="dark"] {
+            --bg: #0f1420;
+            --text: #e8edf5;
+            --subtitle: #8a98b5;
+            --label: #c4cde0;
+            --card-bg: #161d2e;
+            --border: #243049;
+            --input-bg: #0f1626;
+            --input-border: #2c3a55;
+            --input-text: #e8edf5;
+            --stat-label: #8a98b5;
+            --folder: #7e8cb0;
+            --th: #8a98b5;
+            --detail-bg: #0f1626;
+            --detail-text: #c4cde0;
+            --kv: #b6c2da;
+            --code-bg: #0f1626;
+            --empty: #7e8cb0;
+            --hint: #7e8cb0;
+            --err: #ff8a80;
+            --ghost-bg: #1c2740;
+            --ghost-text: #c4cde0;
+            --ghost-hover: #243357;
+            --pwbar-bg: #2a2410;
+            --pwbar-border: #5a4a1a;
+            --result-ok-bg: #142a18;
+            --result-ok-border: #2e7d32;
+            --result-err-bg: #2c1414;
+            --result-err-border: #f44336;
+            --accent: #3b7bff;
+            --accent-hover: #2f6fed;
+            --accent-disabled: #4a5a7a;
+            --danger: #e0524d;
+            --danger-hover: #c93c37;
+            --ok: #7ee0a0;
+            --warn: #ffb74d;
+            --exp: #ff8a80;
+            --auto: #7ec8ff;
+            --rev: #ce93d8;
+            --ok-num: #5fd07a;
+            --warn-num: #ffb74d;
+            --exp-num: #ff8a80;
+            --auto-num: #64b5f6;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); min-width: 960px; }
+
+        /* ===== 上中下三段布局：整页居中、限制最小宽度、随分辨率自适应 ===== */
+        .layout { display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* --- 上：应用标题栏 --- */
+        .app-header { position: sticky; top: 0; z-index: 30; width: 100%; background: var(--surface-bg); border-bottom: 1px solid var(--surface-border); box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+        .header-inner { max-width: 1280px; margin: 0 auto; box-sizing: border-box; padding: 12px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .brand-logo { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--primary-600)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+        .brand-logo svg { width: 23px; height: 23px; color: #fff; }
+        .brand-text { min-width: 0; }
+        .brand-title { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.2; }
+        .brand-sub { font-size: 12px; color: var(--surface-sub); margin-top: 3px; }
+        .header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+        .header-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--surface-sub); }
+        .header-meta a { color: var(--surface-sub); text-decoration: none; font-weight: 600; }
+        .header-meta a:hover { color: var(--text); }
+        .meta-sep { color: var(--surface-border); }
+
+        /* --- 导航 Dock：基础样式（默认停靠「下」，四向由 :root[data-dock] 覆盖） --- */
+        /* width:max-content 必需：fixed + left:50% 时可用宽度只有视口一半，窄屏会把 Dock 挤到文字竖排 */
+        .dock { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); z-index: 40; width: max-content; max-width: calc(100% - 24px); display: flex; align-items: center; gap: 6px; padding: 8px; background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: 18px; box-shadow: 0 14px 34px rgba(15,23,42,0.22), 0 2px 8px rgba(15,23,42,0.10); }
+        .dock-item { white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 9px 24px; border-radius: 12px; color: var(--surface-sub); cursor: pointer; font-size: 12px; font-weight: 600; user-select: none; transition: background .15s, color .15s; }
+        .dock-item:hover { background: var(--surface-hover); color: var(--text); }
+        .dock-item.active { background: var(--surface-active-bg); color: var(--primary); }
+        .dock-item .dock-icon { display: flex; }
+        .dock-item .dock-icon svg { width: 21px; height: 21px; }
+        /* 主题切换：三图标分段控件 */
+        /* 主题选项（设置面板内）：与 Dock 位置选项同款卡片 */
+        .theme-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+        .theme-opt { display: flex; flex-direction: column; align-items: center; gap: 7px; border: 1.5px solid var(--input-border); border-radius: 10px; padding: 14px 6px 11px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--surface-sub); background: var(--card-bg); transition: border-color .15s, background .15s, color .15s, box-shadow .15s; user-select: none; }
+        .theme-opt svg { width: 19px; height: 19px; }
+        .theme-opt:hover { border-color: var(--primary); color: var(--text); }
+        .theme-opt.active { border-color: var(--primary); background: var(--surface-active-bg); color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+        .side-ca { display: flex; align-items: center; gap: 6px; }
+        .side-ca .ca-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+        .side-ca.ok { color: var(--ok); }
+        .side-ca.off { color: var(--exp); }
+        .side-ca.ok .ca-dot { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.18); }
+        .side-ca.off .ca-dot { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.18); }
+        .content { flex: 1; width: 100%; max-width: 1280px; margin: 0 auto; box-sizing: border-box; padding: 28px 32px 140px; }
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .subtitle { color: var(--subtitle); font-size: 13px; margin-bottom: 22px; }
+        .card { background: var(--card-bg); padding: 22px; border-radius: 12px; box-shadow: 0 1px 3px rgba(20,30,60,0.06); margin-bottom: 20px; border: 1px solid var(--border); }
+        .card h3 { margin: 0 0 16px; font-size: 15px; }
+        label { display: block; margin: 14px 0 6px; font-weight: 600; font-size: 13px; color: var(--label); }
+        input, textarea, select { width: 100%; padding: 9px 10px; border: 1px solid var(--input-border); border-radius: 6px; font-size: 14px; font-family: inherit; background: var(--input-bg); color: var(--input-text); }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+        .row { display: flex; gap: 14px; }
+        .row > div { flex: 1; }
+        .check { display: flex; align-items: center; gap: 8px; margin-top: 16px; font-size: 14px; }
+        .check input { width: auto; }
+        button { background: var(--accent); color: #fff; border: none; padding: 10px 22px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 16px; }
+        button:hover { background: var(--accent-hover); }
+        button:disabled { background: var(--accent-disabled); cursor: not-allowed; }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: var(--danger-hover); }
+        button.ghost { background: var(--ghost-bg); color: var(--ghost-text); }
+        button.ghost:hover { background: var(--ghost-hover); }
+        .result { margin-top: 16px; padding: 14px; background: var(--result-ok-bg); border-radius: 6px; border-left: 4px solid var(--result-ok-border); font-size: 14px; }
+        .result.error { background: var(--result-err-bg); border-left-color: var(--result-err-border); }
+        .hint { font-size: 12px; color: var(--hint); margin-top: 4px; }
+        .err-text { color: var(--err); font-size: 12px; margin-top: 4px; display: none; }
+        /* 统计卡片 */
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+        .stat { background: var(--card-bg); border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(20,30,60,0.06); border: 1px solid var(--border); }
+        .stat .num { font-size: 28px; font-weight: 700; }
+        .stat .lbl { font-size: 12px; color: var(--stat-label); margin-top: 4px; }
+        .stat.ok .num { color: var(--ok-num); }
+        .stat.warn .num { color: var(--warn-num); }
+        .stat.exp .num { color: var(--exp-num); }
+        .stat.auto .num { color: var(--auto-num); }
+        /* 首页双列卡片（根证书 / 运行信息），窄屏回落单列 */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .grid-2 > .card { margin-bottom: 0; }
+        /* 首页「即将到期」手机版紧凑列表（表格在 390px 下会被压成竖排文字） */
+        .exp-item { padding: 11px 0; border-bottom: 1px solid var(--border); }
+        .exp-item:first-child { padding-top: 2px; }
+        .exp-item:last-child { border-bottom: none; padding-bottom: 2px; }
+        .exp-main { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .exp-main strong { font-size: 14px; word-break: break-all; }
+        .exp-sub { margin-top: 5px; font-size: 12px; color: var(--folder); }
+        /* 表格 */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { color: var(--th); font-weight: 600; font-size: 12px; }
+        .folder { color: var(--folder); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .badge.ok { background: var(--result-ok-bg); color: var(--ok); }
+        .badge.warn { background: rgba(224,119,0,0.14); color: var(--warn); }
+        .badge.exp { background: rgba(198,40,40,0.14); color: var(--exp); }
+        .badge.auto { background: rgba(21,101,192,0.14); color: var(--auto); }
+        .badge.rev { background: rgba(142,36,170,0.14); color: var(--rev); }
+        .badge.imp { background: rgba(138,148,166,0.16); color: var(--folder); }
+        /* 操作列：flex 换行，横竖间距一致（窄屏换行后不再贴住上一行）。
+           必须挂在内层 div 上，不能直接挂 <td>：td 一旦成为 flex 容器就不再是 table-cell，
+           该列的行分隔线会断开（即此前「分割线对不齐」的根因）。 */
+        .actions { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+        .actions a, .actions button { margin: 0; padding: 5px 9px; font-size: 12px; }
+        /* 状态列：状态标签竖向堆叠，每条一行，颜色区分（正常/临期/已过期/已吊销 + 自动续签 + 导入） */
+        .state { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+        /* 证书列表：固定列宽比例 + 窄屏横向滚动（列宽不再被内容撑变形） */
+        #certList { overflow-x: auto; }
+        #certList table { table-layout: fixed; min-width: 800px; }
+        #certList th:nth-child(1) { width: 22%; }
+        #certList th:nth-child(2) { width: 16%; }
+        #certList th:nth-child(3) { width: 13%; }
+        #certList th:nth-child(4) { width: 19%; }
+        #certList th:nth-child(5) { width: 30%; }
+        #certList td { word-break: break-word; }
+        /* 手机端（≤760px 由 JS 切换渲染）：证书卡片式布局；桌面端仍用表格 */
+        .cert-cards { display: flex; flex-direction: column; gap: 12px; }
+        .cert-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(20,30,60,0.06); }
+        .cc-head { margin-bottom: 8px; }
+        .cc-row { display: flex; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--border); }
+        .cc-k { flex: none; width: 44px; color: var(--th); font-size: 12px; font-weight: 600; padding-top: 2px; }
+        .cc-v { flex: 1; min-width: 0; }
+        .cc-v.sans > div { word-break: break-all; }
+        .cert-card .folder { word-break: break-all; }
+        .cert-card .actions { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+        /* 域名行：域名 + 复制按钮 */
+        .dom { display: flex; align-items: center; gap: 6px; }
+        .dom strong { min-width: 0; word-break: break-all; }
+        .copy-btn { flex: none; padding: 2px 8px !important; font-size: 11px !important; margin: 0 !important; }
+        /* 详情面板顶部操作 */
+        .detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .actions a { background: var(--accent); color: #fff; text-decoration: none; border-radius: 6px; }
+        .actions a:hover { background: var(--accent-hover); }
+        .detail { margin-top: 8px; padding: 12px; background: var(--detail-bg); border-radius: 6px; font-size: 12px; white-space: pre-wrap; word-break: break-all; display: none; color: var(--detail-text); }
+        .empty { color: var(--empty); text-align: center; padding: 28px; }
+        /* 密码栏 */
+        .pwbar { background: var(--pwbar-bg); border: 1px solid var(--pwbar-border); padding: 12px 14px; border-radius: 8px; margin-bottom: 18px; display: none; align-items: center; gap: 10px; }
+        .pwbar input { width: 220px; }
+        .pwbar button { margin: 0; padding: 8px 16px; }
+        /* 页面标题行：标题 + 副标题在左，页面级动作在右 */
+        .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+        .page-head .subtitle { margin-bottom: 22px; }
+        .page-head button { margin: 0; flex: none; }
+        /* 根证书管理面板：把危险操作收进二级入口 */
+        .manage-panel { max-width: 520px; }
+        .manage-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+        .manage-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--input-border); border-radius: 8px; cursor: pointer; transition: border-color .15s, background .15s; }
+        .manage-item:hover { border-color: var(--result-err-border); background: var(--result-err-bg); }
+        .manage-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .manage-item .mi-icon { flex: none; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--result-err-bg); color: var(--err); }
+        .manage-item .mi-icon svg { width: 17px; height: 17px; }
+        .manage-item .mi-body { flex: 1; min-width: 0; }
+        .manage-item .mi-name { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+        .manage-item .mi-desc { display: block; font-size: 12px; color: var(--folder); margin-top: 3px; line-height: 1.6; }
+        .manage-item .mi-arrow { flex: none; color: var(--folder); }
+        .manage-item .mi-arrow svg { width: 16px; height: 16px; }
+        /* 历史根选择列表（回滚面板） */
+        .rb-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 250px; overflow-y: auto; }
+        .rb-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; margin: 0; border: 1px solid var(--input-border); border-radius: 8px; cursor: pointer; font-weight: 400; transition: border-color .15s, background .15s; }
+        .rb-item:hover { border-color: var(--accent); }
+        .rb-item.active { border-color: var(--accent); background: var(--surface-active-bg); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+        .rb-item.locked { opacity: .55; cursor: not-allowed; }
+        .rb-item.locked:hover { border-color: var(--input-border); }
+        .rb-item input { width: auto; flex: none; margin: 3px 0 0; }
+        .rb-item .rb-body { flex: 1; min-width: 0; }
+        .rb-item .rb-name { display: block; font-size: 13px; font-weight: 600; color: var(--text); word-break: break-all; }
+        .rb-item .rb-meta { display: block; font-size: 12px; color: var(--folder); margin-top: 3px; line-height: 1.7; word-break: break-all; }
+        .rb-item .rb-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: var(--seg-bg); color: var(--surface-sub); margin-left: 6px; vertical-align: 1px; }
+        .rb-empty { font-size: 13px; color: var(--folder); padding: 14px; border: 1px dashed var(--input-border); border-radius: 8px; margin-top: 10px; }
+        /* 轮换 / 回滚面板（共用） */
+        .rotate-panel { max-width: 560px; }
+        .warn-box { border: 1px solid var(--result-err-border); background: var(--result-err-bg); border-radius: 8px; padding: 14px 16px; }
+        .warn-box .warn-title { font-size: 13px; font-weight: 700; color: var(--err); margin-bottom: 8px; }
+        .warn-box .warn-list { font-size: 12px; line-height: 1.9; color: var(--kv); }
+        .warn-box code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; }
+        .rotate-field { display: block; font-size: 13px; color: var(--text); margin-top: 12px; }
+        .rotate-field input, .rotate-field select { display: block; margin-top: 6px; }
+        .swap-confirm { margin-top: 8px; }
+        .swap-submit { width: 100%; margin-top: 18px; }
+        .swap-submit:disabled { opacity: .4; cursor: not-allowed; }
+        .rotate-actions { display: flex; gap: 10px; margin-top: 18px; }
+        .rotate-actions button { margin: 0; }
+        .rotate-fail { margin-top: 14px; padding: 12px 14px; border-radius: 8px; background: var(--result-err-bg); border: 1px solid var(--result-err-border); font-size: 12px; line-height: 1.8; color: var(--kv); }
+        /* 键值信息块（后端管理 / 首页运行信息共用） */
+        .kv { font-size: 13px; color: var(--kv); line-height: 1.9; }
+        .kv code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+        .hidden { display: none !important; }
+        /* 证书管理内部分段状态栏（横向分页） */
+        .subtabs { display: inline-flex; gap: 4px; background: var(--seg-bg); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+        .subtab { border: none; background: transparent; color: var(--surface-sub); padding: 8px 18px; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; margin-top: 0; }
+        .subtab:hover { color: var(--text); }
+        .subtab.active { background: var(--seg-active-bg); color: var(--seg-active-text); box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+        /* 卡片头部：标题左、操作按钮右（横向布局，标题与按钮垂直居中） */
+        .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+        .card-head h3 { margin: 0; }
+        .card-head button { margin: 0; align-self: center; }
+        .head-actions { display: flex; align-items: center; gap: 8px; }
+
+        /* Docker Copilot 风格：侧栏与主色变量（追加定义，浅色/深色分别覆盖） */
+        :root {
+            --primary: #3b82f6;
+            --primary-600: #2563eb;
+            --surface-bg: #ffffff;
+            --surface-text: #334155;
+            --surface-sub: #94a3b8;
+            --surface-hover: #f1f5f9;
+            --surface-active-bg: #eff6ff;
+            --surface-border: #e2e8f0;
+            --seg-bg: #f1f5f9;
+            --seg-active-bg: #ffffff;
+            --seg-active-text: #2563eb;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --primary: #3b82f6;
+                --primary-600: #2563eb;
+                --surface-bg: #1e293b;
+                --surface-text: #cbd5e1;
+                --surface-sub: #64748b;
+                --surface-hover: #334155;
+                --surface-active-bg: rgba(59,130,246,0.16);
+                --surface-border: #334155;
+                --seg-bg: #0f172a;
+                --seg-active-bg: #334155;
+                --seg-active-text: #93c5fd;
+            }
+        }
+        :root[data-theme="dark"] {
+            --primary: #3b82f6;
+            --primary-600: #2563eb;
+            --surface-bg: #1e293b;
+            --surface-text: #cbd5e1;
+            --surface-sub: #64748b;
+            --surface-hover: #334155;
+            --surface-active-bg: rgba(59,130,246,0.16);
+            --surface-border: #334155;
+            --seg-bg: #0f172a;
+            --seg-active-bg: #334155;
+            --seg-active-text: #93c5fd;
+        }
+        /* ===== 设置按钮（顶栏最右） ===== */
+        .icon-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9px; background: var(--seg-bg); color: var(--surface-sub); cursor: pointer; transition: background .15s, color .15s; user-select: none; flex-shrink: 0; }
+        .icon-btn:hover { color: var(--text); }
+        .icon-btn svg { width: 18px; height: 18px; }
+        .icon-btn.sm { width: 32px; height: 32px; background: transparent; }
+        .icon-btn.sm svg { width: 16px; height: 16px; }
+
+        /* ===== 设置面板（模态） ===== */
+        .settings-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .settings-panel { width: 100%; max-width: 460px; max-height: calc(100vh - 40px); overflow: auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 24px 60px rgba(15,23,42,0.35); }
+        .settings-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 12px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card-bg); }
+        .settings-head h3 { margin: 0; font-size: 16px; }
+        .settings-body { padding: 20px; }
+        .settings-group + .settings-group { margin-top: 24px; }
+        .settings-label { font-size: 14px; font-weight: 700; color: var(--text); }
+        .settings-hint { font-size: 12px; color: var(--surface-sub); line-height: 1.6; margin-top: 5px; }
+        .dock-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+        .dock-opt { border: 1.5px solid var(--input-border); border-radius: 10px; padding: 12px 6px 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--surface-sub); background: var(--card-bg); transition: border-color .15s, background .15s, color .15s, box-shadow .15s; user-select: none; }
+        .dock-opt:hover { border-color: var(--primary); color: var(--text); }
+        .dock-opt.active { border-color: var(--primary); background: var(--surface-active-bg); color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+        .dock-thumb { position: relative; display: block; width: 42px; height: 30px; margin: 0 auto 7px; border: 1.5px solid var(--input-border); border-radius: 5px; background: var(--bg); }
+        .dock-opt.active .dock-thumb { border-color: var(--primary); }
+        .dock-thumb::after { content: ''; position: absolute; background: var(--primary); border-radius: 2px; }
+        .dock-opt[data-dock="bottom"] .dock-thumb::after { left: 50%; bottom: 3px; transform: translateX(-50%); width: 22px; height: 4px; }
+        .dock-opt[data-dock="left"] .dock-thumb::after { left: 3px; top: 50%; transform: translateY(-50%); width: 4px; height: 16px; }
+        .dock-opt[data-dock="right"] .dock-thumb::after { right: 3px; top: 50%; transform: translateY(-50%); width: 4px; height: 16px; }
+        .dock-opt[data-dock="top"] .dock-thumb::after { left: 4px; right: 4px; top: 3px; height: 4px; }
+
+        /* ===== Dock 位置：下（默认）/ 左 / 右 / 上 =====
+           左/右：竖排悬浮胶囊；上：顶栏下方「靠左」的横向状态栏（sticky 紧贴 header 底部）。 */
+        :root[data-dock="left"] .dock { left: 20px; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; max-width: none; max-height: calc(100vh - 48px); }
+        :root[data-dock="right"] .dock { right: 20px; left: auto; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; max-width: none; max-height: calc(100vh - 48px); }
+        /* 左右竖向：加宽加高，图标略大 */
+        :root[data-dock="left"] .dock-item, :root[data-dock="right"] .dock-item { padding: 13px 22px; min-width: 100px; gap: 6px; }
+        :root[data-dock="left"] .dock-item .dock-icon svg, :root[data-dock="right"] .dock-item .dock-icon svg { width: 22px; height: 22px; }
+        :root[data-dock="left"] .content { padding-left: 152px; }
+        :root[data-dock="right"] .content { padding-right: 152px; }
+        :root[data-dock="top"] .dock { position: sticky; top: var(--header-h, 68px); left: auto; right: auto; bottom: auto; transform: none; width: 100%; max-width: none; justify-content: flex-start; gap: 4px; padding: 6px max(32px, (100% - 1280px) / 2 + 32px); border: none; border-bottom: 1px solid var(--surface-border); border-radius: 0; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+        :root[data-dock="top"] .dock-item { flex-direction: row; gap: 8px; padding: 8px 14px; }
+        :root[data-dock="top"] .dock-item .dock-icon svg { width: 18px; height: 18px; }
+        :root[data-dock="top"] .content { padding-bottom: 28px; }
+
+        /* ===== 全局轻提示（Toast）：替代原生 alert =====
+           右下角浮层，自动消失、可点击提前关闭；窄屏改到顶部，避免遮挡底部 Dock。 */
+        .toast-wrap { position: fixed; right: 22px; bottom: 22px; z-index: 200; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; max-width: min(400px, calc(100vw - 44px)); }
+        :root[data-dock="right"] .toast-wrap { right: 156px; }
+        /* 基础态直接可见：入场动画只是叠加的锦上添花。
+           若改成 opacity:0 + transition 入场，在动画时钟不推进的环境（无头渲染、
+           降级合成）下会永久停在透明态，通知等于消失。 */
+        .toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px 12px 14px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--card-bg); color: var(--text); font-size: 13.5px; line-height: 1.55; box-shadow: 0 10px 30px rgba(15,23,42,0.16), 0 2px 6px rgba(15,23,42,0.08); cursor: pointer; animation: toastIn .22s ease; }
+        .toast.out { opacity: 0; transform: translateY(6px); transition: opacity .2s ease, transform .2s ease; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+        @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast.out { transition: none; } }
+        .toast-ico { flex: none; width: 17px; height: 17px; margin-top: 1px; }
+        .toast-ico svg { display: block; width: 100%; height: 100%; }
+        .toast-msg { min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+        .toast.ok { border-left-color: var(--ok); }
+        .toast.ok .toast-ico { color: var(--ok); }
+        .toast.err { border-left-color: var(--err); }
+        .toast.err .toast-ico { color: var(--err); }
+        .toast.warn { border-left-color: var(--warn); }
+        .toast.warn .toast-ico { color: var(--warn); }
+        .toast.info .toast-ico { color: var(--accent); }
+
+        /* ===== 应用内确认弹窗：替代原生 confirm =====
+           z-index 高于所有面板，因其可能从面板内部（轮换 / 回滚）二次弹出。 */
+        .confirm-overlay { position: fixed; inset: 0; z-index: 120; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .confirm-panel { width: 100%; max-width: 430px; max-height: calc(100vh - 40px); overflow: auto; padding: 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 24px 60px rgba(15,23,42,0.4); }
+        .confirm-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--text); }
+        .confirm-msg { font-size: 13.5px; line-height: 1.75; color: var(--kv); white-space: pre-line; overflow-wrap: anywhere; }
+        .confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .confirm-actions button { margin-top: 0; padding: 9px 20px; font-size: 13.5px; }
+
+        /* ===== 响应式：必须放在样式表末尾 =====
+           同优先级下「后定义覆盖先定义」，媒体查询若写在基础规则之前会被其后的基础规则压掉
+           （此前 .stats 手机端 2 列不生效、4 列网格最小宽度撑破视口就是此因）。 */
+
+        /* 小屏笔记本（≤1080px）：收紧内边距，沿用表格 + 卡片内横向滚动 */
+        @media (max-width: 1080px) {
+            .header-inner { padding: 12px 20px; }
+            .content { padding: 22px 20px 136px; }
+            :root[data-dock="left"] .content { padding-left: 138px; }
+            :root[data-dock="right"] .content { padding-right: 138px; }
+        }
+
+        /* 平板 / 小屏（≤960px）：放开整页最小宽度——否则 761~960px 区间会强制整页横向滚动，
+           与 ≤760px 的卡片布局形成体验断崖。放开后由列表卡片「内部」横向滚动承压。 */
+        @media (max-width: 960px) {
+            body { min-width: 0; }
+            #expiringList { overflow-x: auto; }
+        }
+
+        /* 手机（≤760px）：顶栏堆叠、统计两列、Dock 收紧；证书列表由 JS 切换为卡片 */
+        @media (max-width: 760px) {
+            .header-inner { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 16px; }
+            /* 窄屏顶栏第二行：meta + 设置。允许换行兜底，并禁止 meta 文字被压成竖排 */
+            .header-right { justify-content: space-between; gap: 8px; flex-wrap: wrap; row-gap: 8px; }
+            .header-meta { white-space: nowrap; }
+            /* 超窄屏（≤360）设置按钮会换到第二行，靠右对齐更自然 */
+            .header-right .icon-btn { margin-left: auto; }
+            .content { padding: 16px 14px 128px; }
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-2 { grid-template-columns: 1fr; gap: 14px; }
+            .page-head { flex-wrap: wrap; gap: 10px; }
+            .dock { bottom: 14px; }
+            .dock-item { padding: 7px 14px; font-size: 11px; }
+            /* 手机端 #certList 渲染的是卡片（JS 按断点切换渲染），无需横向滚动 */
+            #certList { overflow-x: visible; }
+            /* 卡片操作区：6 个按钮用 3 列网格（3+3），整齐且触控更高 */
+            .cert-card .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+            .cert-card .actions a, .cert-card .actions button { text-align: center; padding: 8px 6px; }
+            /* Dock：窄屏一律回落为底部悬浮胶囊（左/右竖排会挤占本就不足的横向空间） */
+            :root[data-dock] .dock { position: fixed; left: 50%; right: auto; top: auto; bottom: 14px; transform: translateX(-50%); flex-direction: row; width: max-content; max-width: calc(100% - 24px); padding: 8px; gap: 6px; border: 1px solid var(--surface-border); border-radius: 18px; box-shadow: 0 14px 34px rgba(15,23,42,0.22), 0 2px 8px rgba(15,23,42,0.10); }
+            :root[data-dock] .dock-item { flex-direction: column; gap: 4px; padding: 7px 14px; font-size: 11px; }
+            :root[data-dock="left"] .content, :root[data-dock="right"] .content { padding-left: 14px; padding-right: 14px; }
+            :root[data-dock="top"] .content { padding-bottom: 128px; }
+            /* Toast：窄屏改到 Dock 之上并撑满宽度——避开顶部品牌栏，也不与 Dock 打架 */
+            .toast-wrap { left: 14px; right: 14px; bottom: 86px; align-items: stretch; max-width: none; }
+            :root[data-dock="right"] .toast-wrap { right: 14px; }
+        }
+
+    </style>
+    <script>
+        /* 尽早应用 Dock 位置，避免首帧从默认「下」跳到目标位置 */
+        (function () {
+            var d = 'bottom';
+            try { d = localStorage.getItem('cert-ui-dock') || 'bottom'; } catch (e) {}
+            if (['left', 'bottom', 'right', 'top'].indexOf(d) < 0) d = 'bottom';
+            document.documentElement.setAttribute('data-dock', d);
+        })();
+    </script>
+</head>
+<body>
+<div class="layout">
+    <!-- 上：应用标题栏 -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="header-left">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">Cert Web UI</div>
+                    <div class="brand-sub" id="brandSub">自建 CA · 证书管理平台</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-meta">
+                    <div class="side-ca" id="sideCa"><span class="ca-dot"></span><span id="sideCaText">CA 状态加载中…</span></div>
+                    <span class="meta-sep">|</span>
+                    <span id="sideVersion">—</span>
+                    <span class="meta-sep">|</span>
+                    <a id="sideAuthor" target="_blank" rel="noopener" style="cursor:default">作者</a>
+                </div>
+                <div role="button" tabindex="0" class="icon-btn" id="settingsBtn" title="设置" aria-label="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 导航 Dock：位置可在「设置」中切换（左 / 下 / 右 / 上） -->
+    <nav class="dock" id="dock">
+        <div class="dock-item active" data-tab="home" onclick="showTab('home')">
+            <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span>
+            <span>首页</span>
+        </div>
+        <div class="dock-item" data-tab="certs" onclick="showTab('certs')">
+            <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg></span>
+            <span>证书管理</span>
+        </div>
+        <div class="dock-item" data-tab="backend" onclick="showTab('backend')">
+            <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg></span>
+            <span>后端管理</span>
+        </div>
+    </nav>
+
+    <main class="content">
+        <div class="pwbar" id="pwbar">
+            <span>访问密码：</span>
+            <input type="password" id="pwInput" placeholder="请输入访问密码">
+            <button onclick="savePw()">保存</button>
+            <span id="pwStatus" style="font-size:12px;color:#666"></span>
+        </div>
+
+        <!-- 首页 -->
+        <section id="view-home">
+            <h1>首页</h1>
+            <p class="subtitle" id="homeSubtitle">PKI 健康总览与待处理事项</p>
+            <div class="stats" id="stats">
+                <div class="stat"><div class="num" id="stTotal">—</div><div class="lbl">证书总量</div></div>
+                <div class="stat warn"><div class="num" id="stWarn">—</div><div class="lbl">30 天内临期</div></div>
+                <div class="stat exp"><div class="num" id="stExp">—</div><div class="lbl">已过期</div></div>
+                <div class="stat auto"><div class="num" id="stAuto">—</div><div class="lbl">自动续签</div></div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-head">
+                        <h3>根证书</h3>
+                        <span class="badge ok" id="rootDays">—</span>
+                    </div>
+                    <div class="kv" id="rootOverview">加载中…</div>
+                </div>
+                <div class="card">
+                    <h3>运行信息</h3>
+                    <div class="kv" id="runtimeInfo">加载中…</div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>即将到期</h3>
+                <div id="expiringList"><div class="empty">加载中…</div></div>
+            </div>
+        </section>
+
+        <!-- 证书管理 -->
+        <section id="view-certs" class="hidden">
+            <h1>证书管理</h1>
+            <p class="subtitle">选择操作：签发新证书 / 导入外部证书 / 查看已签发</p>
+            <div class="subtabs" id="subtabs">
+                <button type="button" class="subtab active" data-sub="issue" onclick="showSub('issue')">签发证书</button>
+                <button type="button" class="subtab" data-sub="import" onclick="showSub('import')">导入证书</button>
+                <button type="button" class="subtab" data-sub="manage" onclick="showSub('manage')">证书列表</button>
+            </div>
+            <div class="card subpanel" data-sub="issue">
+                <h3>签发新证书</h3>
+                <form id="certForm">
+                    <div class="row">
+                        <div>
+                            <label>名称（文件夹名，仅英文/数字/连字符）*</label>
+                            <input type="text" name="name" placeholder="例如 my-server" autocomplete="off">
+                            <div class="err-text" id="nameErr">名称只能包含英文字母、数字、连字符(-)和下划线(_)</div>
+                        </div>
+                    </div>
+                    <label>域名 / SAN（每行一个，第一行作为证书主域名 CN）</label>
+                    <textarea name="sans" rows="3" placeholder="example.com&#10;192.168.1.100"></textarea>
+                    <p class="hint">至少填一个；支持泛域名如 *.home.lan，自动识别 DNS / IP</p>
+                    <div class="row">
+                        <div>
+                            <label>有效期</label>
+                            <select name="duration">
+                                <option value="8760h" selected>1 年</option>
+                                <option value="26280h">3 年</option>
+                                <option value="43800h">5 年</option>
+                                <option value="87600h">10 年</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>密钥类型</label>
+                            <select name="key_type">
+                                <option value="ec-p256" selected>EC P-256（推荐）</option>
+                                <option value="ec-p384">EC P-384</option>
+                                <option value="ec-p521">EC P-521</option>
+                                <option value="rsa-2048">RSA 2048</option>
+                                <option value="rsa-4096">RSA 4096</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="check">
+                        <input type="checkbox" name="auto_renew">
+                        加入自动续签（临期自动续签，无需人工干预）
+                    </label>
+                    <button type="submit" id="submitBtn">签发证书</button>
+                </form>
+                <div id="result"></div>
+            </div>
+
+            <div class="card subpanel hidden" data-sub="import">
+                <h3>导入外部证书（归档）</h3>
+                <p class="hint">导入由其他 CA 签发的证书，仅用于集中查看与到期提醒；不支持续签与吊销。</p>
+                <form id="importForm">
+                    <label>名称（文件夹名，仅英文/数字/连字符）*</label>
+                    <input type="text" name="name" placeholder="例如 imported-server" autocomplete="off">
+                    <label>证书内容（PEM，含 -----BEGIN CERTIFICATE-----）*</label>
+                    <textarea name="crt" rows="6" placeholder="粘贴证书 PEM 内容"></textarea>
+                    <label>私钥（可选，PEM）</label>
+                    <textarea name="key" rows="4" placeholder="可选，粘贴私钥 PEM 内容"></textarea>
+                    <div class="err-text" id="importNameErr" style="display:none">名称只能包含英文字母、数字、连字符(-)和下划线(_)</div>
+                    <button type="submit" id="importBtn">导入证书</button>
+                </form>
+                <div id="importResult"></div>
+            </div>
+
+            <div class="card subpanel hidden" data-sub="manage">
+                <h3>已签发证书</h3>
+                <div id="certList"><div class="empty">加载中…</div></div>
+            </div>
+        </section>
+
+        <!-- 后端管理 -->
+        <section id="view-backend" class="hidden">
+            <div class="page-head">
+                <div>
+                    <h1>后端管理</h1>
+                    <p class="subtitle">内置 CA 根证书与自动续签</p>
+                </div>
+                <button class="ghost" onclick="loadBackendStatus(true)">刷新状态</button>
+            </div>
+            <div class="card">
+                <div class="card-head">
+                    <h3>根证书</h3>
+                    <div class="head-actions">
+                        <button class="ghost" id="crlBtn">下载 CRL</button>
+                        <button class="ghost" id="rootBtn">下载根证书</button>
+                        <button class="ghost" id="manageBtn">管理</button>
+                    </div>
+                </div>
+                <div class="kv" id="rootInfo">加载中…</div>
+            </div>
+            <div class="card">
+                <div class="card-head">
+                    <h3>自动续签</h3>
+                    <button class="ghost" id="scanBtn" onclick="doScan(this)">立即扫描</button>
+                </div>
+                <div class="kv" id="renewInfo">加载中…</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 全局轻提示容器：由 toast() 动态填充 -->
+    <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+    <!-- 应用内确认弹窗：由 appConfirm() 驱动，返回 Promise<boolean> -->
+    <div class="confirm-overlay hidden" id="confirmOverlay">
+        <div class="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+            <h3 class="confirm-title" id="confirmTitle">确认操作</h3>
+            <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-actions">
+                <button type="button" class="ghost" id="confirmCancel">取消</button>
+                <button type="button" id="confirmOk">确认</button>
+            </div>
+        </div>
+    </div>
+    <!-- 设置面板 -->
+    <div class="settings-overlay hidden" id="settingsOverlay">
+        <div class="settings-panel" role="dialog" aria-modal="true" aria-label="设置">
+            <div class="settings-head">
+                <h3>设置</h3>
+                <div role="button" tabindex="0" class="icon-btn sm" id="settingsClose" title="关闭" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            </div>
+            <div class="settings-body">
+                <div class="settings-group">
+                    <div class="settings-label">主题</div>
+                    <div class="settings-hint">浅色 / 深色，或跟随系统（自动随操作系统明暗切换）。</div>
+                    <div class="theme-opts" id="themeOpts">
+                        <div role="button" tabindex="0" class="theme-opt" data-mode="light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="theme-opt-name">浅色</span></div>
+                        <div role="button" tabindex="0" class="theme-opt" data-mode="dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span class="theme-opt-name">深色</span></div>
+                        <div role="button" tabindex="0" class="theme-opt" data-mode="system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg><span class="theme-opt-name">系统</span></div>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="settings-label">Dock 栏位置</div>
+                    <div class="settings-hint">「下 / 左 / 右」为悬浮胶囊；选「上」时自动改为顶栏下方、靠左对齐的横向状态栏（窄屏一律回落底部）。</div>
+                    <div class="dock-opts" id="dockOpts">
+                        <div role="button" tabindex="0" class="dock-opt" data-dock="left"><span class="dock-thumb"></span><span class="dock-opt-name">左侧</span></div>
+                        <div role="button" tabindex="0" class="dock-opt" data-dock="bottom"><span class="dock-thumb"></span><span class="dock-opt-name">底部</span></div>
+                        <div role="button" tabindex="0" class="dock-opt" data-dock="right"><span class="dock-thumb"></span><span class="dock-opt-name">右侧</span></div>
+                        <div role="button" tabindex="0" class="dock-opt" data-dock="top"><span class="dock-thumb"></span><span class="dock-opt-name">顶部</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 根证书轮换确认面板：高危操作，含参数、影响面、逐字确认三道门槛 -->
+    <div class="settings-overlay hidden" id="rotateOverlay">
+        <div class="settings-panel rotate-panel" role="dialog" aria-modal="true" aria-label="重新生成根证书">
+            <div class="settings-head">
+                <h3>重新生成根证书</h3>
+                <div role="button" tabindex="0" class="icon-btn sm" id="rotateClose" title="关闭" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            </div>
+            <div class="settings-body">
+                <div id="rotateForm">
+                    <div class="warn-box">
+                        <div class="warn-title">此操作不可撤销，请务必读完</div>
+                        <div class="warn-list">
+                            <div>· 当前根证书将被<b>立即替换</b>；旧根归档到 CA 数据目录的 <code>archive/</code> 下，不会自动删除，可用于回滚。</div>
+                            <div>· 本系统签发的证书将<b>全部用新根重签</b>，序列号与到期时间会刷新。</div>
+                            <div>· 所有客户端（系统 / 浏览器 / 设备信任库）必须<b>重新信任新根证书</b>，否则会报「证书不受信任」。</div>
+                            <div>· 导入的外部证书无法重签，将保持原样。</div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-label">影响面</div>
+                        <div class="settings-hint" id="rotateImpact">计算中…</div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-label">新根参数</div>
+                        <label class="rotate-field">根证书名称（CN）
+                            <input type="text" id="rotateCaName" autocomplete="off">
+                        </label>
+                        <label class="rotate-field">密钥算法
+                            <select id="rotateKeyType">
+                                <option value="ec-p256" selected>EC P-256（推荐）</option>
+                                <option value="ec-p384">EC P-384</option>
+                                <option value="ec-p521">EC P-521</option>
+                                <option value="rsa-2048">RSA 2048</option>
+                                <option value="rsa-4096">RSA 4096（生成较慢）</option>
+                            </select>
+                        </label>
+                        <label class="check"><input type="checkbox" id="rotateReissue" checked> 立即用新根重签全部已签发证书</label>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-label">二次确认</div>
+                        <div class="settings-hint">请逐字输入当前根证书的名称以解锁按钮：<code id="rotateExpect">—</code></div>
+                        <input type="text" id="rotateConfirm" class="swap-confirm" placeholder="输入当前根证书名称" autocomplete="off">
+                        <div class="err-text" id="rotateErr"></div>
+                    </div>
+                    <button type="button" class="danger swap-submit" id="rotateSubmit" disabled>重新生成根证书</button>
+                </div>
+                <div id="rotateDone" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 根证书管理面板：危险操作统一入口，平时不露在页面上，避免误触 -->
+    <div class="settings-overlay hidden" id="manageOverlay">
+        <div class="settings-panel manage-panel" role="dialog" aria-modal="true" aria-label="根证书管理">
+            <div class="settings-head">
+                <h3>根证书管理</h3>
+                <div role="button" tabindex="0" class="icon-btn sm" id="manageClose" title="关闭" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            </div>
+            <div class="settings-body">
+                <div class="warn-box">
+                    <div class="warn-title">以下操作会替换 CA 信任锚，属于不可撤销的高危操作</div>
+                    <div class="warn-list">
+                        <div>· 影响范围是<b>整个 PKI</b>：已签发证书会被重签，所有客户端必须重新信任新的根证书。</div>
+                        <div>· 动手前请确认<b>已备份 CA 数据目录</b>，并预留好向客户端分发根证书的时间。</div>
+                    </div>
+                </div>
+                <div class="manage-list">
+                    <div role="button" tabindex="0" class="manage-item" id="manageRotate">
+                        <span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span>
+                        <span class="mi-body">
+                            <span class="mi-name">重新生成根证书…</span>
+                            <span class="mi-desc">生成一张全新的根证书替换当前根。旧根归档保留，可随时用回滚退回。</span>
+                        </span>
+                        <span class="mi-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                    </div>
+                    <div role="button" tabindex="0" class="manage-item" id="manageRollback">
+                        <span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></span>
+                        <span class="mi-body">
+                            <span class="mi-name">回滚到历史根…</span>
+                            <span class="mi-desc">把 <code>archive/</code> 中的某一张历史根恢复为当前根，撤销此前的轮换。</span>
+                        </span>
+                        <span class="mi-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 根证书回滚面板：把归档中的历史根恢复为当前根（高危，门槛与轮换一致） -->
+    <div class="settings-overlay hidden" id="rollbackOverlay">
+        <div class="settings-panel rotate-panel" role="dialog" aria-modal="true" aria-label="回滚到历史根">
+            <div class="settings-head">
+                <h3>回滚到历史根</h3>
+                <div role="button" tabindex="0" class="icon-btn sm" id="rollbackClose" title="关闭" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            </div>
+            <div class="settings-body">
+                <div id="rollbackForm">
+                    <div class="warn-box">
+                        <div class="warn-title">此操作同样不可撤销，请务必读完</div>
+                        <div class="warn-list">
+                            <div>· 选中的历史根将<b>立即成为当前根</b>；当前根会被归档到 <code>archive/</code>，因此随时可以用同样的方式再退回来。</div>
+                            <div>· 本系统签发的证书将<b>全部用该历史根重签</b>，序列号与到期时间会刷新（私钥保持不变）。</div>
+                            <div>· 客户端若已卸载该历史根，必须<b>重新安装</b>，否则会报「证书不受信任」。</div>
+                            <div>· 导入的外部证书无法重签，将保持原样。</div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-label">选择历史根</div>
+                        <div class="settings-hint">按归档时间倒序，仅列出 CA 数据目录下 <code>archive/</code> 中的可用归档。</div>
+                        <div class="rb-list" id="rbList"><div class="rb-empty">加载中…</div></div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-label">影响面</div>
+                        <div class="settings-hint" id="rollbackImpact">请先选择一张历史根。</div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="check"><input type="checkbox" id="rollbackReissue" checked> 立即用该历史根重签全部已签发证书</label>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-label">二次确认</div>
+                        <div class="settings-hint">请逐字输入<b>当前</b>根证书的名称以解锁按钮：<code id="rollbackExpect">—</code></div>
+                        <input type="text" id="rollbackConfirm" class="swap-confirm" placeholder="输入当前根证书名称" autocomplete="off">
+                        <div class="err-text" id="rollbackErr"></div>
+                    </div>
+                    <button type="button" class="danger swap-submit" id="rollbackSubmit" disabled>回滚到此根</button>
+                </div>
+                <div id="rollbackDone" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const APP_VERSION = 'v1.0.0';   // 仅首帧兜底；接口返回 st.version 后顶栏会覆盖
+    const APP_DESC = '自建 CA · 证书管理平台';   // 顶部标题栏简介
+    // 作者名与链接由 /api/backend/status 下发（config/config.go 里硬编码），前端不再维护
+
+    let UI_PWD = '';
+    let AUTH_REQUIRED = false;
+    let CERTS = [];
+    let BACKEND = null;
+    let ROOT = null;
+    let RENEW = null;
+
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+
+    function authUrl(u) {
+        if (UI_PWD) {
+            const sep = u.includes('?') ? '&' : '?';
+            return u + sep + 'ui_password=' + encodeURIComponent(UI_PWD);
+        }
+        return u;
+    }
+    function dlHref(path) { return authUrl('/download?file=' + encodeURIComponent(path)); }
+
+    /* ---------- 全局轻提示 ---------- */
+    var TOAST_ICONS = {
+        ok: '<path d="M20 6L9 17l-5-5"/>',
+        err: '<path d="M18 6L6 18M6 6l12 12"/>',
+        warn: '<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+        info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+    };
+
+    // 轻提示：message 走 textContent（不做 HTML 解析，天然防注入）
+    function toast(message, type) {
+        type = TOAST_ICONS[type] ? type : 'info';
+        var wrap = document.getElementById('toastWrap');
+        if (!wrap) return;
+        var el = document.createElement('div');
+        el.className = 'toast ' + type;
+        el.setAttribute('role', type === 'err' ? 'alert' : 'status');
+        el.innerHTML = '<span class="toast-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + TOAST_ICONS[type] + '</svg></span><span class="toast-msg"></span>';
+        el.querySelector('.toast-msg').textContent = String(message == null ? '' : message);
+        wrap.appendChild(el);   // 入场动画由 CSS animation 自带，无需手动触发
+
+        var timer = setTimeout(dismiss, (type === 'err' || type === 'warn') ? 4600 : 2800);
+        function dismiss() {
+            clearTimeout(timer);
+            if (el.dataset.closing) return;
+            el.dataset.closing = '1';
+            el.classList.add('out');
+            setTimeout(function () { el.remove(); }, 220);
+        }
+        el.onclick = dismiss;
+    }
+
+    /* ---------- 应用内确认弹窗 ---------- */
+    // appConfirm({ title, message, confirmText, danger }) -> Promise<boolean>
+    // Esc / 点遮罩 / 取消 = false，Enter / 确认 = true
+    function appConfirm(opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var ov = document.getElementById('confirmOverlay');
+            var okBtn = document.getElementById('confirmOk');
+            var cancelBtn = document.getElementById('confirmCancel');
+            if (!ov) { resolve(false); return; }
+
+            document.getElementById('confirmTitle').textContent = opts.title || '确认操作';
+            document.getElementById('confirmMsg').textContent = opts.message || '';
+            okBtn.textContent = opts.confirmText || '确认';
+            okBtn.className = opts.danger ? 'danger' : '';
+
+            var done = false;
+            function finish(v) {
+                if (done) return;
+                done = true;
+                ov.classList.add('hidden');
+                okBtn.onclick = cancelBtn.onclick = ov.onclick = null;
+                document.removeEventListener('keydown', onKey, true);
+                resolve(v);
+            }
+            // capture 阶段拦截：优先于各面板自己的 Esc 收起逻辑
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+                else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+            }
+            okBtn.onclick = function () { finish(true); };
+            cancelBtn.onclick = function () { finish(false); };
+            ov.onclick = function (e) { if (e.target === ov) finish(false); };
+            document.addEventListener('keydown', onKey, true);
+            ov.classList.remove('hidden');
+            // 危险操作默认聚焦「取消」，避免一记回车就把高危操作放行
+            setTimeout(function () { (opts.danger ? cancelBtn : okBtn).focus(); }, 30);
+        });
+    }
+
+    /* ---------- 文件下载：先探测再落盘，错误在页内提示 ---------- */
+    // 后端在无内容时返回纯文本 + 404（如「尚无吊销记录」），此处直接沿用后端文案
+    async function downloadPem(url, filename) {
+        try {
+            var res = await apiFetch(url);
+            if (!res.ok) {
+                var msg = '';
+                try { msg = (await res.text()).trim(); } catch (e) {}
+                if (!msg || msg.length > 140 || /^\s*</.test(msg)) msg = '下载失败（HTTP ' + res.status + '）';
+                toast(msg, res.status === 404 ? 'warn' : 'err');
+                return false;
+            }
+            var blob = await res.blob();
+            var href = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = href;
+            a.download = filename || '';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () { URL.revokeObjectURL(href); }, 6000);
+            return true;
+        } catch (e) {
+            if (e.message !== 'unauthorized') toast('下载失败：' + e.message, 'err');
+            return false;
+        }
+    }
+
+    // 复制到剪贴板：优先 Clipboard API（HTTPS / localhost），HTTP 环境自动降级 execCommand
+    async function copyToClipboard(text) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch (e) { /* 继续降级 */ }
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-1000px';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            ta.setSelectionRange(0, ta.value.length);
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return ok;
+        } catch (e) { return false; }
+    }
+
+    // 按钮短暂反馈「已复制 / 失败」，随后复原
+    function flashBtn(btn, msg) {
+        if (!btn || btn.dataset.flashing === '1') return;
+        btn.dataset.flashing = '1';
+        const old = btn.textContent;
+        btn.textContent = msg;
+        setTimeout(function () { btn.textContent = old; delete btn.dataset.flashing; }, 1200);
+    }
+
+    // 复制域名文本
+    async function copyDomain(name, btn) {
+        const c = CERTS.find(x => x.name === name);
+        const text = (c && (c.domain || c.name)) || decodeURIComponent(name);
+        flashBtn(btn, (await copyToClipboard(text)) ? '已复制' : '失败');
+    }
+
+    // 复制文件内容（证书 / 私钥 PEM）。
+    // 只接收证书名 + 类别，URL 在函数内部从 CERTS 取：
+    // 路径里可能含引号类字符，绝不能拼进 onclick 属性字符串。
+    async function copyFile(name, kind, btn) {
+        const c = CERTS.find(x => x.name === name) || {};
+        const url = dlHref(kind === 'key' ? c.key : c.crt);
+        try {
+            const res = await apiFetch(url);
+            if (!res.ok) throw new Error('http ' + res.status);
+            flashBtn(btn, (await copyToClipboard(await res.text())) ? '已复制' : '失败');
+        } catch (e) { flashBtn(btn, '失败'); }
+    }
+
+    async function apiFetch(url, opts = {}) {
+        opts.headers = opts.headers || {};
+        if (UI_PWD) opts.headers['X-UI-Password'] = UI_PWD;
+        const res = await fetch(url, opts);
+        if (res.status === 401) { toast('访问密码错误', 'err'); throw new Error('unauthorized'); }
+        return res;
+    }
+
+    function savePw() {
+        UI_PWD = document.getElementById('pwInput').value;
+        document.getElementById('pwStatus').textContent = '已保存';
+        loadAll();
+    }
+
+    async function loadConfig() {
+        try {
+            const json = await (await fetch('/api/config')).json();
+            AUTH_REQUIRED = !!json.auth_required;
+            if (AUTH_REQUIRED) document.getElementById('pwbar').style.display = 'flex';
+            else loadAll();
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadAll() {
+        await Promise.all([loadCerts(), loadBackendStatus(false)]);
+    }
+
+    function showTab(tab) {
+        document.querySelectorAll('.dock-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+        document.getElementById('view-home').classList.toggle('hidden', tab !== 'home');
+        document.getElementById('view-certs').classList.toggle('hidden', tab !== 'certs');
+        document.getElementById('view-backend').classList.toggle('hidden', tab !== 'backend');
+    }
+
+    // 证书管理内部分页：签发证书 / 导入证书 / 证书列表
+    function showSub(sub) {
+        document.querySelectorAll('.subtab').forEach(t => t.classList.toggle('active', t.dataset.sub === sub));
+        document.querySelectorAll('.subpanel').forEach(p => p.classList.toggle('hidden', p.dataset.sub !== sub));
+    }
+
+    function renderStats() {
+        let warn = 0, exp = 0, auto = 0;
+        CERTS.forEach(c => { if (c.expired) exp++; else if (c.warning) warn++; if (c.auto_renew) auto++; });
+        document.getElementById('stTotal').textContent = CERTS.length;
+        document.getElementById('stWarn').textContent = warn;
+        document.getElementById('stExp').textContent = exp;
+        document.getElementById('stAuto').textContent = auto;
+    }
+
+    // 顶栏 CA 就绪指示。CA 状态不再单独成卡——就绪状态在顶栏圆点，
+    // CN/到期在「根证书」卡，CA 目录/已吊销/版本在首页「运行信息」，整卡属于重复展示。
+    function renderCaBadge() {
+        const sc = document.getElementById('sideCa');
+        if (!sc) return;
+        const sct = document.getElementById('sideCaText');
+        if (!BACKEND) {
+            sc.className = 'side-ca';
+            if (sct) sct.textContent = 'CA 状态加载中…';
+            return;
+        }
+        sc.className = 'side-ca ' + (BACKEND.ready ? 'ok' : 'off');
+        if (sct) sct.textContent = BACKEND.ready ? 'CA 就绪' : 'CA 未就绪';
+    }
+
+    // 过期列只输出「剩余/已过天数 + 到期日期」，不带状态词（状态语义统一由「状态」列承载）
+    function fmtExpiry(c) {
+        if (!c.not_after) return { text: '未知', days: '未知', date: '', cls: '' };
+        const days = Math.floor((c.expires_in_seconds || 0) / 86400);
+        const d = new Date(c.not_after).toLocaleString('zh-CN');
+        if (c.expired) return { text: '已过期 · ' + d, days: '过期 ' + Math.abs(days) + ' 天', date: d, cls: 'exp' };
+        if (c.warning) return { text: '临期 ' + days + ' 天 · ' + d, days: '剩余 ' + days + ' 天', date: d, cls: 'warn' };
+        return { text: '剩余 ' + days + ' 天 · ' + d, days: '剩余 ' + days + ' 天', date: d, cls: 'ok' };
+    }
+
+    // 手机断点（≤760px）：走卡片布局；否则走表格
+    const PHONE_MQ = window.matchMedia('(max-width: 760px)');
+    function isPhone() { return PHONE_MQ.matches; }
+    PHONE_MQ.addEventListener('change', function () { if (CERTS.length) { renderCertList(); renderExpiring(); } });
+
+    // 状态标签：主状态四选一（已吊销 > 已过期 > 临期 > 正常），再挂 自动续签 / 导入
+    function certBadges(c) {
+        let stPrimary;
+        if (c.revoked) stPrimary = '<span class="badge rev">已吊销</span>';
+        else if (c.expired) stPrimary = '<span class="badge exp">已过期</span>';
+        else if (c.warning) stPrimary = '<span class="badge warn">临期</span>';
+        else stPrimary = '<span class="badge ok">正常</span>';
+        const auto = c.auto_renew ? '<span class="badge auto">自动续签</span>' : '';
+        const originBadge = (c.origin === 'imported') ? '<span class="badge imp">导入</span>' : '';
+        return stPrimary + auto + originBadge;
+    }
+
+    // SAN：一行一个，固定换行（不随屏宽并回一行）
+    function certSans(c) {
+        return (c.sans && c.sans.length)
+            ? c.sans.map(x => '<div>' + escapeHtml(x) + '</div>').join('')
+            : '<span style="color:#bbb">—</span>';
+    }
+
+    // 操作按钮组（表格与卡片共用，避免两处逻辑漂移）
+    function certActions(c) {
+        const n = encodeURIComponent(c.name);
+        const keyBtn = c.has_key
+            ? '<a href="' + dlHref(c.key) + '">下载私钥</a>'
+            : '<span style="color:#bbb;font-size:12px">无私钥</span>';
+        const manageBtns = (c.origin === 'imported')
+            ? ''
+            : '<button class="ghost" onclick="doRenew(\'' + n + '\', this)">续签</button>' +
+              '<button class="ghost" onclick="doRevoke(\'' + n + '\', this)">吊销</button>';
+        return '<a href="' + dlHref(c.crt) + '">下载证书</a>' + keyBtn + manageBtns +
+            '<button class="ghost" onclick="toggleDetail(\'' + n + '\', this)">详情</button>' +
+            '<button class="danger" onclick="doDelete(\'' + n + '\', this)">删除</button>';
+    }
+
+    // 域名块（域名 + 复制按钮 + 文件夹路径）
+    function certDomainCell(c) {
+        const n = encodeURIComponent(c.name);
+        return '<div class="dom"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
+            '<button class="ghost copy-btn" title="复制域名" onclick="copyDomain(\'' + n + '\', this)">复制</button></div>' +
+            '<div class="folder">' + escapeHtml(c.folder) + '</div>';
+    }
+
+    function certRow(c) {
+        const exp = fmtExpiry(c);
+        return '<tr>' +
+            '<td>' + certDomainCell(c) + '</td>' +
+            '<td>' + certSans(c) + '</td>' +
+            '<td><div class="state">' + certBadges(c) + '</div></td>' +
+            '<td><span class="badge ' + exp.cls + '">' + escapeHtml(exp.days) + '</span><div class="folder">' + escapeHtml(exp.date) + '</div></td>' +
+            '<td><div class="actions">' + certActions(c) + '</div></td>' +
+            '</tr>';
+    }
+
+    // 手机端：一张证书一张卡片
+    function certCard(c) {
+        const exp = fmtExpiry(c);
+        const n = encodeURIComponent(c.name);
+        return '<div class="cert-card">' +
+            '<div class="cc-head">' + certDomainCell(c) + '</div>' +
+            '<div class="cc-row"><span class="cc-k">状态</span><div class="cc-v"><div class="state">' + certBadges(c) + '</div></div></div>' +
+            '<div class="cc-row"><span class="cc-k">SAN</span><div class="cc-v sans">' + certSans(c) + '</div></div>' +
+            '<div class="cc-row"><span class="cc-k">过期</span><div class="cc-v"><span class="badge ' + exp.cls + '">' + escapeHtml(exp.days) + '</span><div class="folder">' + escapeHtml(exp.date) + '</div></div></div>' +
+            '<div class="actions">' + certActions(c) + '</div>' +
+            '<div class="detail" id="detail-' + n + '"></div>' +
+            '</div>';
+    }
+
+    // 证书列表渲染：按断点切换 表格 / 卡片
+    function renderCertList() {
+        const listEl = document.getElementById('certList');
+        if (!CERTS.length) { listEl.innerHTML = '<div class="empty">暂无证书</div>'; return; }
+        if (isPhone()) {
+            listEl.innerHTML = '<div class="cert-cards">' + CERTS.map(certCard).join('') + '</div>';
+            return;
+        }
+        let rows = '<table><thead><tr><th>域名 / 文件夹</th><th>SAN</th><th>状态</th><th>过期</th><th>操作</th></tr></thead><tbody>';
+        CERTS.forEach(c => rows += certRow(c));
+        rows += '</tbody></table>';
+        listEl.innerHTML = rows;
+    }
+
+    // 首页「即将到期」：排除已吊销（无需再关注），按剩余时间升序取前 5
+    function renderExpiring() {
+        const el = document.getElementById('expiringList');
+        if (!el) return;
+        if (!CERTS.length) { el.innerHTML = '<div class="empty">暂无证书</div>'; return; }
+        const sorted = CERTS.filter(c => !c.revoked)
+            .sort((a, b) => (a.expires_in_seconds || 0) - (b.expires_in_seconds || 0));
+        if (!sorted.length) { el.innerHTML = '<div class="empty">暂无需要关注的证书</div>'; return; }
+        const top = sorted.slice(0, 5);
+        // 手机：紧凑列表（表格在 390px 下会把徽标压成竖排文字）
+        if (isPhone()) {
+            el.innerHTML = top.map(c => {
+                const exp = fmtExpiry(c);
+                return '<div class="exp-item">' +
+                    '<div class="exp-main"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' + certBadges(c) + '</div>' +
+                    '<div class="exp-sub">' + escapeHtml(exp.days) + ' · 到期 ' + escapeHtml(exp.date) + '</div>' +
+                    '</div>';
+            }).join('');
+            return;
+        }
+        let r = '<table><thead><tr><th>域名</th><th>状态</th><th>剩余</th><th>到期时间</th></tr></thead><tbody>';
+        top.forEach(c => {
+            const exp = fmtExpiry(c);
+            r += '<tr><td><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
+                    '<div class="folder">' + escapeHtml(c.folder) + '</div></td>' +
+                '<td><div class="state">' + certBadges(c) + '</div></td>' +
+                '<td><span class="badge ' + exp.cls + '">' + escapeHtml(exp.days) + '</span></td>' +
+                '<td class="folder">' + escapeHtml(exp.date) + '</td></tr>';
+        });
+        r += '</tbody></table>';
+        el.innerHTML = r;
+    }
+
+    async function loadCerts() {
+        const listEl = document.getElementById('certList');
+        try {
+            const json = await (await apiFetch('/api/certs')).json();
+            CERTS = json.certs || [];
+            renderStats();
+            if (CERTS.length === 0) {
+                listEl.innerHTML = '<div class="empty">暂无证书</div>';
+                renderExpiring();
+                return;
+            }
+            renderCertList();
+            renderExpiring();
+        } catch (e) {
+            listEl.innerHTML = '<div class="empty" style="color:#c62828">加载失败</div>';
+        }
+    }
+
+    async function loadBackendStatus(showAlert) {
+        try {
+            const [st, root, renew] = await Promise.all([
+                (await apiFetch('/api/backend/status')).json(),
+                (await apiFetch('/api/backend/rootinfo')).json(),
+                (await apiFetch('/api/renew/status')).json(),
+            ]);
+            BACKEND = st; ROOT = root; RENEW = renew;
+            renderCaBadge();
+            // 版本与作者以 /api/backend/status 返回值为准（前端常量仅作首帧兜底）
+            const sv = document.getElementById('sideVersion');
+            if (sv && st.version) sv.textContent = st.version;
+            const sa = document.getElementById('sideAuthor');
+            if (sa && st.author_name) {
+                sa.textContent = st.author_name;
+                if (st.author_url) { sa.href = st.author_url; sa.style.cursor = ''; }
+                else { sa.removeAttribute('href'); sa.style.cursor = 'default'; }
+            }
+            renderRootOverview();
+            renderRuntime();
+            renderRootInfo();
+            renderRenew();
+            document.getElementById('rootBtn').onclick = () => downloadPem('/api/backend/root', 'root_ca.crt');
+            document.getElementById('crlBtn').onclick = () => downloadPem('/api/backend/crl', 'crl.pem');
+            if (showAlert) toast(st.ready ? '内置 CA 就绪' : ('内置 CA 未就绪：' + (st.message || '')), st.ready ? 'ok' : 'err');
+        } catch (e) {
+            if (showAlert) toast('状态获取失败', 'err');
+        }
+    }
+
+    // Go 零值时间（0001-01-01）与空值统一收敛为占位符，避免出现「1/1/1 07:36:42」
+    function fmtTime(t) {
+        if (!t) return '—';
+        const d = new Date(t);
+        return (isNaN(d.getTime()) || d.getFullYear() < 2000) ? '—' : d.toLocaleString('zh-CN');
+    }
+    function kvRow(k, v) { return '<div><span style="color:var(--stat-label)">' + k + '：</span>' + v + '</div>'; }
+
+    // 运行时长：秒 → 「N 天 N 小时 / N 小时 N 分钟 / N 分钟」
+    function fmtUptime(sec) {
+        const s = Math.max(0, Math.floor(sec || 0));
+        const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+        if (d) return d + ' 天 ' + h + ' 小时';
+        if (h) return h + ' 小时 ' + m + ' 分钟';
+        return m + ' 分钟';
+    }
+
+    // 首页：根证书摘要（信任锚）。只留关键字段，完整内容见「后端管理」
+    function renderRootOverview() {
+        const el = document.getElementById('rootOverview');
+        const badge = document.getElementById('rootDays');
+        if (!el) return;
+        const r = ROOT;
+        if (!r) { el.textContent = '加载中…'; return; }
+        if (!r.exists) {
+            if (badge) { badge.className = 'badge exp'; badge.textContent = '不可用'; }
+            el.innerHTML = '<div style="color:var(--err)">根证书不可用：' + escapeHtml(r.error || '未知原因') + '</div>';
+            return;
+        }
+        if (badge) {
+            badge.className = 'badge ' + (r.expired ? 'exp' : (r.days_left <= 30 ? 'warn' : 'ok'));
+            badge.textContent = r.expired ? '已过期' : ('剩余 ' + r.days_left + ' 天');
+        }
+        const fp = r.fingerprint_sha256 || '';
+        el.innerHTML =
+            kvRow('Subject', escapeHtml(r.subject)) +
+            kvRow('签发者', r.self_signed ? '自签（根）' : escapeHtml(r.issuer)) +
+            kvRow('算法', escapeHtml(r.public_key_algorithm) + ' · ' + escapeHtml(r.signature_algorithm)) +
+            kvRow('序列号', '<code style="word-break:break-all">' + escapeHtml(r.serial) + '</code>') +
+            kvRow('到期', escapeHtml(fmtTime(r.not_after))) +
+            kvRow('指纹', '<code style="word-break:break-all">' + escapeHtml(fp.slice(0, 24)) + '…</code>' +
+                ' <button class="ghost copy-btn" onclick="copyRootFp(this)">复制</button>');
+    }
+
+    // 复制根证书指纹全文
+    async function copyRootFp(btn) {
+        flashBtn(btn, (await copyToClipboard((ROOT && ROOT.fingerprint_sha256) || '')) ? '已复制' : '失败');
+    }
+
+    // 首页：进程运行信息（排障用静态信息，不在「后端管理」重复展示）
+    function renderRuntime() {
+        const el = document.getElementById('runtimeInfo');
+        if (!el) return;
+        if (!BACKEND) { el.textContent = '加载中…'; return; }
+        el.innerHTML =
+            kvRow('版本', escapeHtml(BACKEND.version || APP_VERSION)) +
+            kvRow('启动时间', escapeHtml(fmtTime(BACKEND.started_at))) +
+            kvRow('运行时长', escapeHtml(fmtUptime(BACKEND.uptime_seconds))) +
+            kvRow('监听端口', '<code>' + escapeHtml(BACKEND.port || '—') + '</code>') +
+            kvRow('CA 目录', '<code style="word-break:break-all">' + escapeHtml(BACKEND.ca_home || '—') + '</code>') +
+            kvRow('证书输出', '<code style="word-break:break-all">' + escapeHtml(BACKEND.output_base || '—') + '</code>') +
+            kvRow('已吊销', String(BACKEND.revoked || 0) + ' 张');
+    }
+
+    // 根证书详情
+    function renderRootInfo() {
+        const el = document.getElementById('rootInfo');
+        const r = ROOT;
+        if (!r) { el.textContent = '加载中…'; return; }
+        if (!r.exists) {
+            el.innerHTML = '<div style="color:var(--err)">根证书不可用：' + escapeHtml(r.error || '未知原因') + '</div>' +
+                kvRow('配置路径', '<code>' + escapeHtml(r.path || '—') + '</code>');
+            return;
+        }
+        const exp = r.expired
+            ? '<span class="badge exp">已过期</span>'
+            : (r.days_left <= 30 ? '<span class="badge warn">剩余 ' + r.days_left + ' 天</span>'
+                                 : '<span class="badge ok">剩余 ' + r.days_left + ' 天</span>');
+        el.innerHTML =
+            kvRow('文件路径', '<code>' + escapeHtml(r.path) + '</code>') +
+            kvRow('Subject', escapeHtml(r.subject)) +
+            kvRow('Issuer', escapeHtml(r.issuer)) +
+            kvRow('序列号', '<code>' + escapeHtml(r.serial) + '</code>') +
+            kvRow('有效期', escapeHtml(fmtTime(r.not_before)) + ' ~ ' + escapeHtml(fmtTime(r.not_after))) +
+            kvRow('到期', exp) +
+            kvRow('SHA-256 指纹', '<code style="word-break:break-all">' + escapeHtml(r.fingerprint_sha256) + '</code>') +
+            kvRow('签名算法', escapeHtml(r.signature_algorithm)) +
+            kvRow('公钥', escapeHtml(r.public_key_algorithm)) +
+            kvRow('类型', (r.is_ca ? 'CA 证书' : '非 CA 证书') + (r.self_signed ? ' · 自签' : ''));
+    }
+
+    // 自动续签状态
+    function renderRenew() {
+        const el = document.getElementById('renewInfo');
+        const r = RENEW;
+        if (!r) { el.textContent = '加载中…'; return; }
+        el.innerHTML =
+            kvRow('扫描间隔', escapeHtml(r.interval || '—')) +
+            kvRow('提前阈值', escapeHtml(r.before || '—')) +
+            kvRow('上次扫描', fmtTime(r.last_scan) === '—' ? '尚未执行' : escapeHtml(fmtTime(r.last_scan))) +
+            kvRow('下次预计', r.next_scan ? escapeHtml(fmtTime(r.next_scan)) : '—') +
+            kvRow('证书总数', String(r.total || 0)) +
+            kvRow('自动续签', String(r.auto_renew || 0)) +
+            kvRow('上次续签', '成功 ' + (r.renewed || 0) + ' · 失败 ' + (r.failed || 0)) +
+            (r.running ? kvRow('状态', '<span class="badge warn">扫描中…</span>') : '');
+    }
+
+    // 手动触发一次自动续签扫描
+    async function doScan(btn) {
+        const old = btn.textContent;
+        btn.disabled = true; btn.textContent = '扫描中…';
+        try {
+            await apiFetch('/api/renew/scan', { method: 'POST' });
+            toast('已触发扫描（后台执行）', 'ok');
+            setTimeout(() => loadBackendStatus(false), 1500);
+        } catch (e) {
+            toast('触发失败：' + e.message, 'err');
+        }
+        btn.disabled = false; btn.textContent = old;
+    }
+
+    async function toggleDetail(name, btn) {
+        const box = document.getElementById('detail-' + name);
+        if (box && box.style.display === 'block') { box.style.display = 'none'; btn.textContent = '详情'; return; }
+        btn.textContent = '收起';
+        if (!box) {
+            const tr = btn.closest('tr');
+            if (!tr) { btn.textContent = '详情'; return; }  // 卡片模式已内置 detail 容器，不会走到这里
+            const nw = document.createElement('tr');
+            nw.innerHTML = '<td colspan="5"><div class="detail" id="detail-' + name + '"></div></td>';
+            tr.after(nw);
+        }
+        const b = document.getElementById('detail-' + name);
+        try {
+            const info = await (await apiFetch('/api/certs/' + name)).json();
+            const c = CERTS.find(x => x.name === decodeURIComponent(name)) || {};
+            let actions = '';
+            if (c.crt) actions += '<button class="ghost" onclick="copyFile(\'' + c.name + '\', \'crt\', this)">复制证书 PEM</button>';
+            if (c.key) actions += '<button class="ghost" onclick="copyFile(\'' + c.name + '\', \'key\', this)">复制私钥 PEM</button>';
+            b.innerHTML = (actions ? '<div class="detail-actions">' + actions + '</div>' : '') +
+                '<div>' + escapeHtml(JSON.stringify(info, null, 2)) + '</div>';
+            b.style.display = 'block';
+        } catch (e) { b.textContent = '加载详情失败'; b.style.display = 'block'; }
+    }
+
+    async function doRenew(name, btn) {
+        if (!(await appConfirm({
+            title: '续签证书',
+            message: '将用当前根证书重新签发「' + decodeURIComponent(name) + '」。\n证书私钥与 SAN 保持不变，只有序列号与有效期会被刷新。',
+            confirmText: '确认续签',
+        }))) return;
+        btn.disabled = true;
+        try {
+            const json = await (await apiFetch('/api/certs/' + name + '/renew', { method: 'POST' })).json();
+            if (json.success) { toast('续签成功', 'ok'); loadCerts(); } else toast('续签失败：' + json.error, 'err');
+        } catch (e) {}
+        btn.disabled = false;
+    }
+
+    async function doRevoke(name, btn) {
+        if (!(await appConfirm({
+            title: '吊销证书',
+            message: '确认吊销「' + decodeURIComponent(name) + '」？\n吊销后该证书进入 CRL，已安装 CRL 的客户端将拒绝它。',
+            confirmText: '确认吊销',
+            danger: true,
+        }))) return;
+        btn.disabled = true;
+        try {
+            const json = await (await apiFetch('/api/certs/' + name + '/revoke', { method: 'POST' })).json();
+            if (json.success) toast('已提交吊销', 'ok'); else toast('吊销失败：' + json.error, 'err');
+        } catch (e) {}
+        btn.disabled = false;
+    }
+
+    async function doDelete(name, btn) {
+        if (!(await appConfirm({
+            title: '删除证书文件',
+            message: '确认删除「' + decodeURIComponent(name) + '」的证书文件？\n文件将从磁盘移除，此操作不可恢复。',
+            confirmText: '确认删除',
+            danger: true,
+        }))) return;
+        btn.disabled = true;
+        try {
+            const json = await (await apiFetch('/api/certs/' + name, { method: 'DELETE' })).json();
+            if (json.success) { toast('已删除', 'ok'); loadCerts(); } else toast('删除失败：' + json.error, 'err');
+        } catch (e) {}
+        btn.disabled = false;
+    }
+
+    // 名称输入框：实时过滤非英文/数字/连字符/下划线
+    document.querySelector('#certForm [name=name]').addEventListener('input', function () {
+        const cleaned = this.value.replace(/[^A-Za-z0-9_-]/g, '');
+        if (cleaned !== this.value) { this.value = cleaned; document.getElementById('nameErr').style.display = 'block'; }
+        else document.getElementById('nameErr').style.display = 'none';
+    });
+
+    document.getElementById('certForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true; btn.textContent = '签发中...';
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '';
+        const f = e.target;
+        const name = f.name.value.trim();
+        if (name && !/^[A-Za-z0-9_-]+$/.test(name)) {
+            document.getElementById('nameErr').style.display = 'block';
+            btn.disabled = false; btn.textContent = '签发证书'; return;
+        }
+        const data = {
+            name: name,
+            sans: f.sans.value,
+            duration: f.duration.value,
+            key_type: f.key_type.value,
+            auto_renew: f.auto_renew.checked
+        };
+        try {
+            const res = await apiFetch('/api/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const json = await res.json();
+            if (json.success) {
+                resultDiv.innerHTML = '<div class="result"><strong>✅ 签发成功</strong><br>域名：' + escapeHtml(json.domain) +
+                    '<br>路径：<code>' + escapeHtml(json.path) + '</code></div>';
+                f.reset();
+                document.querySelector('#certForm [name=duration]').value = '8760h';
+                loadCerts();
+            } else {
+                resultDiv.innerHTML = '<div class="result error"><strong>❌ 签发失败</strong><br><pre style="white-space:pre-wrap;word-break:break-all;margin:6px 0 0">' + escapeHtml(json.error) + '</pre></div>';
+            }
+        } catch (err) {
+            resultDiv.innerHTML = '<div class="result error"><strong>❌ 请求错误</strong><br>' + escapeHtml(String(err)) + '</div>';
+        } finally {
+            btn.disabled = false; btn.textContent = '签发证书';
+        }
+    };
+
+    // 导入外部证书（仅归档）
+    document.getElementById('importForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const btn = document.getElementById('importBtn');
+        btn.disabled = true; btn.textContent = '导入中...';
+        const resultDiv = document.getElementById('importResult');
+        resultDiv.innerHTML = '';
+        const f = e.target;
+        const name = f.name.value.trim();
+        if (name && !/^[A-Za-z0-9_-]+$/.test(name)) {
+            document.getElementById('importNameErr').style.display = 'block';
+            btn.disabled = false; btn.textContent = '导入证书'; return;
+        }
+        if (!f.crt.value.trim()) {
+            resultDiv.innerHTML = '<div class="result error"><strong>❌ 证书内容不能为空</strong></div>';
+            btn.disabled = false; btn.textContent = '导入证书'; return;
+        }
+        const data = { name: name, crt: f.crt.value, key: f.key.value };
+        try {
+            const res = await apiFetch('/api/certs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const json = await res.json();
+            if (json.success) {
+                resultDiv.innerHTML = '<div class="result"><strong>✅ 导入成功</strong><br>名称：' + escapeHtml(json.name) +
+                    '<br>路径：<code>' + escapeHtml(json.path) + '</code></div>';
+                f.reset();
+                loadCerts();
+            } else {
+                resultDiv.innerHTML = '<div class="result error"><strong>❌ 导入失败</strong><br><pre style="white-space:pre-wrap;word-break:break-all;margin:6px 0 0">' + escapeHtml(json.error) + '</pre></div>';
+            }
+        } catch (err) {
+            resultDiv.innerHTML = '<div class="result error"><strong>❌ 请求错误</strong><br>' + escapeHtml(String(err)) + '</div>';
+        } finally {
+            btn.disabled = false; btn.textContent = '导入证书';
+        }
+    };
+    document.querySelector('#importForm [name=name]').addEventListener('input', function () {
+        const cleaned = this.value.replace(/[^A-Za-z0-9_-]/g, '');
+        if (cleaned !== this.value) { this.value = cleaned; document.getElementById('importNameErr').style.display = 'block'; }
+        else document.getElementById('importNameErr').style.display = 'none';
+    });
+
+    // 主题：浅色 / 深色 / 系统（参考 Docker Copilot 三图标分段控件），持久化到 localStorage
+    function applyTheme(t) {
+        if (t === 'system') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', t);
+        document.querySelectorAll('#themeOpts .theme-opt').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.mode === t);
+        });
+    }
+    (function initTheme() {
+        const saved = (function () { try { return localStorage.getItem('cert-ui-theme'); } catch (e) { return null; } })();
+        const t = (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system';
+        applyTheme(t);
+        document.querySelectorAll('#themeOpts .theme-opt').forEach(function (b) {
+            b.onclick = function () {
+                const mode = b.dataset.mode;
+                try { localStorage.setItem('cert-ui-theme', mode); } catch (e) {}
+                applyTheme(mode);
+            };
+            b.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } };
+        });
+    })();
+
+    // 侧栏底部：版本与作者信息（作者由接口下发，见 loadBackendStatus；HTML 里的文本是首帧占位）
+    (function initFooter() {
+        const bs = document.getElementById('brandSub');
+        if (bs) bs.textContent = APP_DESC;
+        document.getElementById('sideVersion').textContent = APP_VERSION;
+    })();
+
+    // Dock 位置：左 / 下 / 右 / 上（上=顶栏下方靠左的状态栏），持久化到 localStorage
+    function syncHeaderH() {
+        const h = document.querySelector('.app-header');
+        if (h) document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+    }
+    function applyDock(pos) {
+        const valid = ['left', 'bottom', 'right', 'top'];
+        if (valid.indexOf(pos) < 0) pos = 'bottom';
+        document.documentElement.setAttribute('data-dock', pos);
+        document.querySelectorAll('#dockOpts .dock-opt').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.dock === pos);
+        });
+        syncHeaderH();
+    }
+    (function initDock() {
+        const saved = (function () { try { return localStorage.getItem('cert-ui-dock'); } catch (e) { return null; } })();
+        applyDock(saved || 'bottom');
+        document.querySelectorAll('#dockOpts .dock-opt').forEach(function (b) {
+            b.onclick = function () {
+                const pos = b.dataset.dock;
+                try { localStorage.setItem('cert-ui-dock', pos); } catch (e) {}
+                applyDock(pos);
+            };
+            b.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } };
+        });
+        window.addEventListener('resize', syncHeaderH);
+        window.addEventListener('load', syncHeaderH);
+    })();
+
+    // ===== 根证书高危操作：轮换 / 回滚 =====
+    // 统一入口：后端管理页「管理」按钮 → 管理面板 → 轮换面板 / 回滚面板。
+    // 每种操作都有多道门槛：① 面板内逐条警告 + 影响面数字
+    //   ② 逐字输入「当前」根 CN 才解锁按钮 ③ 浏览器原生 confirm 再念一遍影响面。
+    // 服务端另有 confirm 字段硬校验（`/rotate` 与 `/rollback` 各自独立校验）。
+    let SWAPPING = false;   // 切换根期间（生成 RSA 根可能耗时数秒）禁止关闭面板
+    let ARCHIVES = [];      // 最近一次拉取到的历史根归档
+
+    function fmtDay(t) {
+        if (!t) return '—';
+        const d = new Date(t);
+        if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—';
+        const p = n => (n < 10 ? '0' : '') + n;
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+
+    /* ---------- 管理面板 ---------- */
+    function openManage() {
+        document.getElementById('manageOverlay').classList.remove('hidden');
+    }
+    function closeManage() {
+        document.getElementById('manageOverlay').classList.add('hidden');
+    }
+
+    // 根证书信息未就绪时不允许进入任何高危流程
+    function rootCNOrWarn() {
+        if (!ROOT || !ROOT.exists || !ROOT.common_name) {
+            toast('根证书信息尚未加载完成，请稍后再试', 'warn');
+            return null;
+        }
+        return ROOT.common_name;
+    }
+
+    /* ---------- 面板通用 ---------- */
+    function resetSwapPanel(kind) {
+        document.getElementById(kind + 'Form').classList.remove('hidden');
+        const done = document.getElementById(kind + 'Done');
+        done.classList.add('hidden');
+        done.innerHTML = '';
+        document.getElementById(kind + 'Err').style.display = 'none';
+        const inp = document.getElementById(kind + 'Confirm');
+        inp.value = '';
+        document.getElementById(kind + 'Submit').disabled = true;
+    }
+
+    function closeSwap(kind) {
+        if (SWAPPING) return;
+        document.getElementById(kind + 'Overlay').classList.add('hidden');
+    }
+
+    /* ---------- 轮换 ---------- */
+    function openRotate() {
+        const cn = rootCNOrWarn();
+        if (cn === null) return;
+        closeManage();
+        resetSwapPanel('rotate');
+        document.getElementById('rotateExpect').textContent = cn;
+        document.getElementById('rotateCaName').value = cn;
+        const issued = CERTS.filter(c => c.origin !== 'imported').length;
+        document.getElementById('rotateImpact').textContent =
+            '将用新根重签 ' + issued + ' 张证书；' + (CERTS.length - issued) + ' 张导入证书保持原样。';
+        document.getElementById('rotateOverlay').classList.remove('hidden');
+        setTimeout(function () { document.getElementById('rotateConfirm').focus(); }, 50);
+    }
+
+    /* ---------- 回滚 ---------- */
+    async function openRollback() {
+        const cn = rootCNOrWarn();
+        if (cn === null) return;
+        closeManage();
+        resetSwapPanel('rollback');
+        document.getElementById('rollbackExpect').textContent = cn;
+        document.getElementById('rollbackOverlay').classList.remove('hidden');
+        await loadArchives();
+    }
+
+    async function loadArchives() {
+        const list = document.getElementById('rbList');
+        list.innerHTML = '<div class="rb-empty">加载中…</div>';
+        try {
+            const res = await apiFetch('/api/backend/root/archives');
+            const json = await res.json();
+            ARCHIVES = (json && json.archives) || [];
+        } catch (e) {
+            list.innerHTML = '<div class="rb-empty">历史根列表加载失败：' + escapeHtml(e.message) + '</div>';
+            return;
+        }
+        if (!ARCHIVES.length) {
+            list.innerHTML = '<div class="rb-empty">CA 数据目录下还没有历史根归档，暂无可回滚的目标。</div>';
+            return;
+        }
+        list.innerHTML = ARCHIVES.map(function (a, i) {
+            const locked = a.is_current || !a.has_key;
+            const tag = a.is_current ? '<span class="rb-tag">即当前根</span>'
+                : (!a.has_key ? '<span class="rb-tag">缺少私钥</span>' : '');
+            const meta = [
+                '归档于 ' + fmtTime(a.archived_at),
+                a.key_type || '',
+                a.not_after ? '原到期 ' + fmtDay(a.not_after) : '',
+            ].filter(Boolean).join(' · ');
+            return '<label class="rb-item' + (locked ? ' locked' : '') + '">' +
+                '<input type="radio" name="rbPick" value="' + i + '"' + (locked ? ' disabled' : '') + '>' +
+                '<span class="rb-body">' +
+                '<span class="rb-name">' + escapeHtml(a.common_name || a.name) + tag + '</span>' +
+                '<span class="rb-meta">' + escapeHtml(a.name) + '<br>' + escapeHtml(meta) + '</span>' +
+                '</span></label>';
+        }).join('');
+        list.querySelectorAll('.rb-item input').forEach(function (el) {
+            el.addEventListener('change', onArchivePick);
+        });
+    }
+
+    function pickedArchive() {
+        const el = document.querySelector('input[name="rbPick"]:checked');
+        if (!el) return null;
+        return ARCHIVES[+el.value] || null;
+    }
+
+    function onArchivePick() {
+        document.querySelectorAll('#rbList .rb-item').forEach(function (row) {
+            const inp = row.querySelector('input');
+            row.classList.toggle('active', !!(inp && inp.checked));
+        });
+        const a = pickedArchive();
+        const impact = document.getElementById('rollbackImpact');
+        if (!a) { impact.textContent = '请先选择一张历史根。'; return; }
+        const issued = CERTS.filter(c => c.origin !== 'imported').length;
+        const imported = CERTS.length - issued;
+        const name = a.common_name || a.name;
+        impact.textContent = document.getElementById('rollbackReissue').checked
+            ? '将用「' + name + '」重签 ' + issued + ' 张证书；' + imported + ' 张导入证书保持原样。'
+            : '不会重签已有证书，' + issued + ' 张本系统签发的证书将停留在即将被归档的当前根之下。';
+    }
+
+    /* ---------- 提交 ---------- */
+    async function doSwap(kind, url, payload, confirmOpts, busyText) {
+        if (!(await appConfirm(confirmOpts))) return;
+        const submit = document.getElementById(kind + 'Submit');
+        const errEl = document.getElementById(kind + 'Err');
+        const old = submit.textContent;
+        errEl.style.display = 'none';
+        SWAPPING = true;
+        submit.disabled = true;
+        submit.textContent = busyText;
+        try {
+            const res = await apiFetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success) {
+                errEl.textContent = json.error || '操作失败';
+                errEl.style.display = 'block';
+            } else {
+                showSwapResult(kind, json.result);
+                await loadAll();   // 刷新首页统计 / 证书列表 / 根证书详情
+            }
+        } catch (e) {
+            errEl.textContent = '请求失败：' + e.message;
+            errEl.style.display = 'block';
+        }
+        SWAPPING = false;
+        submit.textContent = old;
+        submit.disabled = false;
+    }
+
+    function doRotate() {
+        const reissue = document.getElementById('rotateReissue').checked;
+        const issued = CERTS.filter(c => c.origin !== 'imported').length;
+        doSwap('rotate', '/api/backend/root/rotate', {
+            confirm: document.getElementById('rotateConfirm').value.trim(),
+            key_type: document.getElementById('rotateKeyType').value,
+            ca_name: document.getElementById('rotateCaName').value.trim(),
+            reissue_all: reissue,
+        }, {
+            title: '重新生成根证书',
+            message: '· 旧根将被归档，新根立即生效\n' +
+                (reissue ? '· ' + issued + ' 张证书将被新根重签\n' : '· 已有证书不会被重签，需自行处理\n') +
+                '· 所有客户端必须重新信任新根，否则会报证书不受信任',
+            confirmText: '确认重新生成',
+            danger: true,
+        }, '正在生成新根并重签，请稍候…');
+    }
+
+    function doRollback() {
+        const a = pickedArchive();
+        if (!a) return;
+        const reissue = document.getElementById('rollbackReissue').checked;
+        const issued = CERTS.filter(c => c.origin !== 'imported').length;
+        doSwap('rollback', '/api/backend/root/rollback', {
+            confirm: document.getElementById('rollbackConfirm').value.trim(),
+            dir: a.dir,
+            reissue_all: reissue,
+        }, {
+            title: '回滚到历史根「' + (a.common_name || a.name) + '」',
+            message: '· 当前根会被归档，该历史根立即生效\n' +
+                (reissue ? '· ' + issued + ' 张证书将被该历史根重签\n' : '· 已有证书不会被重签，需自行处理\n') +
+                '· 所有客户端必须信任该历史根，否则会报证书不受信任',
+            confirmText: '确认回滚',
+            danger: true,
+        }, '正在回滚并重签，请稍候…');
+    }
+
+    function showSwapResult(kind, r) {
+        const rollback = (r.mode === 'rollback');
+        document.getElementById(kind + 'Form').classList.add('hidden');
+        const done = document.getElementById(kind + 'Done');
+        done.classList.remove('hidden');
+        const failed = (r.failed && r.failed.length)
+            ? '<div class="rotate-fail"><b>重签失败 ' + r.failed.length + ' 张：</b>' +
+              r.failed.map(x => '<div>' + escapeHtml(x) + '</div>').join('') + '</div>'
+            : '';
+        done.innerHTML =
+            '<div class="result"><b>' + (rollback ? '已回滚到历史根' : '根证书已轮换完成') + '</b></div>' +
+            '<div class="kv" style="margin-top:14px">' +
+            kvRow(rollback ? '已恢复的根' : '新根名称', escapeHtml(r.new_subject)) +
+            kvRow('密钥算法', escapeHtml(r.new_key_type)) +
+            kvRow('根到期', escapeHtml(fmtTime(r.new_not_after))) +
+            kvRow('根指纹', '<code style="word-break:break-all">' + escapeHtml(r.new_fingerprint_sha256) + '</code>') +
+            (rollback ? kvRow('来源归档', '<code style="word-break:break-all">' + escapeHtml(r.source_archive) + '</code>') : '') +
+            kvRow('重签成功', r.reissued + ' 张') +
+            kvRow('导入证书', r.untouched + ' 张（保持原样）') +
+            kvRow(rollback ? '被归档的旧根' : '旧根归档', '<code style="word-break:break-all">' + escapeHtml(r.archive_dir) + '</code>') +
+            '</div>' + failed +
+            '<div class="warn-box" style="margin-top:16px"><div class="warn-title">下一步必做</div>' +
+            '<div class="warn-list">请立即下载当前根证书并分发到所有客户端安装信任，否则访问会报「证书不受信任」。' +
+            '后端管理页的「下载根证书」按钮指向的已经是当前根。</div></div>' +
+            '<div class="rotate-actions">' +
+            '<button type="button" class="ghost" id="' + kind + 'Download">下载当前根证书</button>' +
+            '<button type="button" id="' + kind + 'DoneClose">完成</button>' +
+            '</div>';
+        document.getElementById(kind + 'Download').onclick = function () { downloadPem('/api/backend/root', 'root_ca.crt'); };
+        document.getElementById(kind + 'DoneClose').onclick = function () { closeSwap(kind); };
+    }
+
+    (function initSwapPanels() {
+        // 既绑定鼠标点击，也支持键盘 Enter / 空格激活（role=button 元素）
+        const bindAct = function (id, fn) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.onclick = fn;
+            el.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } };
+        };
+        const bind = function (id, fn) {
+            const el = document.getElementById(id);
+            if (el) el.onclick = fn;
+        };
+
+        // 管理面板
+        bindAct('manageBtn', openManage);
+        bindAct('manageClose', closeManage);
+        bindAct('manageRotate', openRotate);
+        bindAct('manageRollback', openRollback);
+        const mo = document.getElementById('manageOverlay');
+        if (mo) mo.addEventListener('click', function (e) { if (e.target === mo) closeManage(); });
+
+        // 轮换 / 回滚面板
+        ['rotate', 'rollback'].forEach(function (kind) {
+            const ov = document.getElementById(kind + 'Overlay');
+            if (!ov) return;
+            bind(kind + 'Close', function () { closeSwap(kind); });
+            bind(kind + 'Submit', function () { if (kind === 'rollback') { doRollback(); } else { doRotate(); } });
+            ov.addEventListener('click', function (e) { if (e.target === ov) closeSwap(kind); });
+            // 门槛②：输入必须逐字等于「当前」根 CN
+            document.getElementById(kind + 'Confirm').addEventListener('input', function () {
+                const want = (ROOT && ROOT.common_name) || '\u0000';
+                document.getElementById(kind + 'Submit').disabled = this.value.trim() !== want;
+            });
+        });
+
+        const rbReissue = document.getElementById('rollbackReissue');
+        if (rbReissue) rbReissue.addEventListener('change', onArchivePick);
+
+        // Esc 只负责收起已打开的面板；切换根的过程中一律不响应
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape' || SWAPPING) return;
+            ['manageOverlay', 'rotateOverlay', 'rollbackOverlay'].forEach(function (id) {
+                document.getElementById(id).classList.add('hidden');
+            });
+        });
+    })();
+
+    // 设置面板：打开 / 关闭
+    (function initSettings() {
+        const ov = document.getElementById('settingsOverlay');
+        const btn = document.getElementById('settingsBtn');
+        const closeBtn = document.getElementById('settingsClose');
+        if (!ov || !btn) return;
+        function open() { ov.classList.remove('hidden'); syncHeaderH(); }
+        function shut() { ov.classList.add('hidden'); }
+        btn.onclick = open;
+        btn.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+        if (closeBtn) closeBtn.onclick = shut;
+        ov.addEventListener('click', function (e) { if (e.target === ov) shut(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shut(); });
+    })();
+
+    loadConfig();
+</script>
+</body>
+</html>

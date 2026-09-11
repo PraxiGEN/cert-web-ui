@@ -1,0 +1,27 @@
+services:
+  cert-web-ui:
+    image: cert-web-ui:local
+    container_name: cert-web-ui
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - "16850:8080"
+    volumes:
+      # CA 数据目录持久化：根证书 / 根私钥 / 吊销记录 / CRL 与证书输出都在这里
+      # 首次启动会自动生成 EC P-256 根证书（有效期 10 年）
+      - /mnt/sdb/1000/Docker/cert-web-ui/data:/data
+    environment:
+      - CA_HOME=/data # CA 数据目录（根证书/根私钥/revoked.json/crl.pem）
+      - CERT_OUTPUT_BASE=/data/certs # 证书签发输出目录
+      - CA_NAME=Home.lan Root CA # 根证书 CN
+      - CA_ROOT_VALIDITY=87600h # 根 CA 有效期：10 年
+      - CA_LEAF_VALIDITY=8760h # 叶子证书默认有效期：1 年
+      - RENEW_INTERVAL=24h # 自动续签扫描周期
+      - RENEW_BEFORE=720h # 临期阈值：剩余 < 30 天即预警
+      # 生产环境建议取消注释并设置强密码，否则 UI 任何人可访问
+      # - UI_PASSWORD=你的密码
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
