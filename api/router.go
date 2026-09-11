@@ -48,6 +48,7 @@ func NewRouter(cfg config.Config) *http.ServeMux {
 	mux.HandleFunc("GET /api/certs/{name}", withAuth(cfg, detailHandler(cfg)))
 	mux.HandleFunc("POST /api/issue", withAuth(cfg, issueHandler(cfg)))
 	mux.HandleFunc("POST /api/certs/{name}/renew", withAuth(cfg, renewHandler(cfg)))
+	mux.HandleFunc("POST /api/certs/{name}/reissue", withAuth(cfg, reissueHandler(cfg)))
 	mux.HandleFunc("POST /api/certs/{name}/revoke", withAuth(cfg, revokeHandler(cfg)))
 	mux.HandleFunc("DELETE /api/certs/{name}", withAuth(cfg, deleteHandler(cfg)))
 	mux.HandleFunc("POST /api/certs/import", withAuth(cfg, importHandler(cfg)))
