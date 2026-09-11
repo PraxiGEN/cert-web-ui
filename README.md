@@ -27,11 +27,15 @@ docker run -d --name cert-web-ui \
 
 打开 `http://<主机>:9280`，首页下载根证书并信任到客户端，即可开始签发。
 
-或使用 compose：
+或使用 compose：仓库根目录提供了开箱即用的 `docker-compose.yml`，已预置全部环境变量（含中文注释）、数据绑定挂载到本地 `./data` 目录，克隆后直接启动：
 
 ```bash
+git clone https://github.com/PraxiGEN/cert-web-ui.git
+cd cert-web-ui
 docker compose up -d
 ```
+
+`CA_NAME`、有效期、续签周期等参数直接在 `docker-compose.yml` 的 `environment` 中修改；如需访问门禁，取消 `UI_PASSWORD` 行的注释并设置密码即可。
 
 ## 配置
 
