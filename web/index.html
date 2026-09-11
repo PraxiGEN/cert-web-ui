@@ -261,6 +261,8 @@
         /* 域名行：域名 + 复制按钮 */
         .dom { display: flex; align-items: center; gap: 6px; }
         .dom strong { min-width: 0; word-break: break-all; }
+        .dom-block > * + * { margin-top: 4px; }
+        .dom-desc { color: var(--text); }
         .copy-btn { flex: none; padding: 2px 8px !important; font-size: 11px !important; margin: 0 !important; }
         /* 详情面板顶部操作 */
         .detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
@@ -1338,16 +1340,16 @@
             '<button class="danger" onclick="doDelete(\'' + n + '\', this)">删除</button>';
     }
 
-    // 域名块（域名 + 复制按钮 + 可选描述 + 文件夹路径）
+    // 域名块（域名 + 复制按钮 + 文件夹路径 + 可选描述；行间距由 .dom-block 行距控制）
     function certDomainCell(c) {
         const n = encodeURIComponent(c.name);
         const desc = c.description
-            ? '<div class="folder" style="color:var(--text)">' + escapeHtml(c.description) + '</div>'
+            ? '<div class="folder dom-desc">' + escapeHtml(c.description) + '</div>'
             : '';
-        return '<div class="dom"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
+        return '<div class="dom-block"><div class="dom"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
             '<button class="ghost copy-btn" title="复制域名" onclick="copyDomain(\'' + n + '\', this)">复制</button></div>' +
-            desc +
-            '<div class="folder">' + escapeHtml(c.folder) + '</div>';
+            '<div class="folder">' + escapeHtml(c.folder) + '</div>' +
+            desc + '</div>';
     }
 
     function certRow(c) {
