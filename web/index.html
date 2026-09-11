@@ -603,6 +603,8 @@
                             <div class="err-text" id="nameErr">名称只能包含英文字母、数字、连字符(-)和下划线(_)</div>
                         </div>
                     </div>
+                    <label>描述（可选，支持中文）</label>
+                    <input type="text" name="description" maxlength="200" placeholder="例如：NAS 面板证书" autocomplete="off">
                     <label>域名 / SAN（每行一个，第一行作为证书主域名 CN）</label>
                     <textarea name="sans" rows="3" placeholder="example.com&#10;192.168.1.100"></textarea>
                     <p class="hint">至少填一个；支持泛域名如 *.home.lan，自动识别 DNS / IP</p>
@@ -642,6 +644,8 @@
                 <form id="importForm">
                     <label>名称（文件夹名，仅英文/数字/连字符）*</label>
                     <input type="text" name="name" placeholder="例如 imported-server" autocomplete="off">
+                    <label>描述（可选，支持中文）</label>
+                    <input type="text" name="description" maxlength="200" placeholder="例如：从旧 CA 迁移的网关证书" autocomplete="off">
                     <label>证书内容（PEM，含 -----BEGIN CERTIFICATE-----）*</label>
                     <textarea name="crt" rows="6" placeholder="粘贴证书 PEM 内容"></textarea>
                     <label>私钥（可选，PEM）</label>
@@ -1274,11 +1278,15 @@
             '<button class="danger" onclick="doDelete(\'' + n + '\', this)">删除</button>';
     }
 
-    // 域名块（域名 + 复制按钮 + 文件夹路径）
+    // 域名块（域名 + 复制按钮 + 可选描述 + 文件夹路径）
     function certDomainCell(c) {
         const n = encodeURIComponent(c.name);
+        const desc = c.description
+            ? '<div class="folder" style="color:var(--text)">' + escapeHtml(c.description) + '</div>'
+            : '';
         return '<div class="dom"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
             '<button class="ghost copy-btn" title="复制域名" onclick="copyDomain(\'' + n + '\', this)">复制</button></div>' +
+            desc +
             '<div class="folder">' + escapeHtml(c.folder) + '</div>';
     }
 
@@ -1627,7 +1635,8 @@
             sans: f.sans.value,
             duration: f.duration.value,
             key_type: f.key_type.value,
-            auto_renew: f.auto_renew.checked
+            auto_renew: f.auto_renew.checked,
+            description: f.description.value
         };
         try {
             const res = await apiFetch('/api/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -1665,7 +1674,7 @@
             resultDiv.innerHTML = '<div class="result error"><strong>❌ 证书内容不能为空</strong></div>';
             btn.disabled = false; btn.textContent = '导入证书'; return;
         }
-        const data = { name: name, crt: f.crt.value, key: f.key.value };
+        const data = { name: name, crt: f.crt.value, key: f.key.value, description: f.description.value };
         try {
             const res = await apiFetch('/api/certs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const json = await res.json();
