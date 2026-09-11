@@ -10,10 +10,7 @@ import (
 	"time"
 )
 
-// Metadata 记录每张证书的签发元数据，与 .crt/.key 同目录存放。
-//
-// 时间字段用 omitzero 而不是 omitempty：omitempty 对 time.Time 这类结构体字段
-// 永不判空，零值会被实打实写成 "0001-01-01T00:00:00Z"（Go 1.24 起才有 omitzero）。
+// Metadata 与 .crt/.key 同目录存放；时间字段用 omitzero（omitempty 对结构体字段永不判空）
 type Metadata struct {
 	Domain    string    `json:"domain"`
 	Folder    string    `json:"folder"`
@@ -36,9 +33,9 @@ type CertEntry struct {
 	Domain    string    `json:"domain"`   // 主域名
 	CRT       string    `json:"crt"`      // .crt 完整路径
 	Key       string    `json:"key"`      // .key 完整路径（可能为空）
-	HasKey    bool      `json:"has_key"`  //
-	SANs      []string  `json:"sans"`     //
-	KeyType   string    `json:"key_type"` //
+	HasKey    bool      `json:"has_key"`
+	SANs      []string  `json:"sans"`
+	KeyType   string    `json:"key_type"`
 	AutoRenew bool      `json:"auto_renew"`
 	Serial    string    `json:"serial"`
 	NotBefore time.Time `json:"not_before"`
@@ -79,12 +76,7 @@ func ReadMeta(dir string) (Metadata, bool) {
 	return m, true
 }
 
-// ValidLeafName 校验「单个路径元素」形态的名称：非空、不是 "." 或 ".."、
-// 不含路径分隔符与 NUL。
-//
-// 这是把名字拼进路径或路由之前的最后一道硬门槛。此前只靠
-// filepath.Join 之后再比对前缀，而 Join(base, ".") 会直接退化成 base 本身，
-// 前缀比对因此形同虚设（DELETE /api/certs/. 曾可删空整个证书目录）。
+// ValidLeafName 名字拼进路径前的最后一道硬门槛（此前前缀比对在 name="." 时形同虚设）
 func ValidLeafName(name string) error {
 	switch {
 	case name == "":
@@ -99,8 +91,7 @@ func ValidLeafName(name string) error {
 	return nil
 }
 
-// ListCerts 扫描输出目录，返回所有已签发证书条目。
-// renewBefore 用于判断临期预警。
+// ListCerts 扫描输出目录返回全部证书条目，renewBefore 用于临期预警
 func ListCerts(outputBase string, renewBefore time.Duration) ([]CertEntry, error) {
 	entries, err := os.ReadDir(outputBase)
 	if err != nil {
@@ -180,12 +171,7 @@ func ListCerts(outputBase string, renewBefore time.Duration) ([]CertEntry, error
 	return out, nil
 }
 
-// DeleteCert 删除某个证书目录。
-//
-// 用 os.Root 把操作锁死在输出根目录之内：内核按已打开的目录 fd 逐级解析，
-// 符号链接与 ".." 都无法逃逸，且 Root.RemoveAll(".") 会被直接拒绝。
-// 这取代了此前「先 Abs 再比字符串前缀」的写法——那种写法在目标恰好等于
-// 根目录本身时会把整个证书目录删掉。
+// DeleteCert 用 os.Root 沙箱删除证书目录：符号链接与 ".." 无法逃逸
 func DeleteCert(outputBase, folder string) error {
 	if err := ValidLeafName(folder); err != nil {
 		return err
