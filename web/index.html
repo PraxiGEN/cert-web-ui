@@ -28,8 +28,6 @@
             --ghost-bg: #eef1f6;
             --ghost-text: #33405a;
             --ghost-hover: #e2e7f0;
-            --pwbar-bg: #fff8e1;
-            --pwbar-border: #ffe082;
             --result-ok-bg: #e8f5e9;
             --result-ok-border: #4caf50;
             --result-err-bg: #ffebee;
@@ -74,8 +72,6 @@
                 --ghost-bg: #1c2740;
                 --ghost-text: #c4cde0;
                 --ghost-hover: #243357;
-                --pwbar-bg: #2a2410;
-                --pwbar-border: #5a4a1a;
                 --result-ok-bg: #142a18;
                 --result-ok-border: #2e7d32;
                 --result-err-bg: #2c1414;
@@ -120,8 +116,6 @@
             --ghost-bg: #1c2740;
             --ghost-text: #c4cde0;
             --ghost-hover: #243357;
-            --pwbar-bg: #2a2410;
-            --pwbar-border: #5a4a1a;
             --result-ok-bg: #142a18;
             --result-ok-border: #2e7d32;
             --result-err-bg: #2c1414;
@@ -274,10 +268,19 @@
         .actions a:hover { background: var(--accent-hover); }
         .detail { margin-top: 8px; padding: 12px; background: var(--detail-bg); border-radius: 6px; font-size: 12px; white-space: pre-wrap; word-break: break-all; display: none; color: var(--detail-text); }
         .empty { color: var(--empty); text-align: center; padding: 28px; }
-        /* 密码栏 */
-        .pwbar { background: var(--pwbar-bg); border: 1px solid var(--pwbar-border); padding: 12px 14px; border-radius: 8px; margin-bottom: 18px; display: none; align-items: center; gap: 10px; }
-        .pwbar input { width: 220px; }
-        .pwbar button { margin: 0; padding: 8px 16px; }
+        /* 登录页：UI_PASSWORD 启用时的全屏门禁，验证通过才显示主界面 */
+        .login-overlay { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-panel { width: 100%; max-width: 340px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 34px 30px 30px; box-shadow: 0 12px 40px rgba(10, 20, 50, 0.14); text-align: center; }
+        .login-icon { width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px; background: var(--ghost-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+        .login-icon svg { width: 25px; height: 25px; }
+        .login-title { margin: 0 0 6px; font-size: 18px; color: var(--text); }
+        .login-sub { margin: 0 0 18px; font-size: 12.5px; color: var(--subtitle); line-height: 1.7; }
+        .login-panel input { text-align: center; margin: 0; }
+        .login-err { min-height: 18px; margin: 8px 0 2px; font-size: 12px; color: var(--err); }
+        .login-panel button { margin: 0; width: 100%; padding: 10px; font-size: 14px; }
+        .login-panel.shake { animation: loginShake .35s; }
+        @keyframes loginShake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+        @media (prefers-reduced-motion: reduce) { .login-panel.shake { animation: none; } }
         /* 页面标题行：标题 + 副标题在左，页面级动作在右 */
         .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
         .page-head .subtitle { margin-bottom: 22px; }
@@ -534,6 +537,7 @@
                     <a id="sideAuthor" target="_blank" rel="noopener" style="cursor:default">作者</a>
                 </div>
                 <div role="button" tabindex="0" class="icon-btn" id="settingsBtn" title="设置" aria-label="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+                <div role="button" tabindex="0" class="icon-btn" id="logoutBtn" title="退出登录" aria-label="退出登录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></div>
             </div>
         </div>
     </header>
@@ -555,13 +559,6 @@
     </nav>
 
     <main class="content">
-        <div class="pwbar" id="pwbar">
-            <span>访问密码：</span>
-            <input type="password" id="pwInput" placeholder="请输入访问密码">
-            <button onclick="savePw()">保存</button>
-            <span id="pwStatus" style="font-size:12px;color:#666"></span>
-        </div>
-
         <!-- 首页 -->
         <section id="view-home">
             <h1>首页</h1>
@@ -694,6 +691,18 @@
             </div>
         </section>
     </main>
+
+    <!-- 登录页：UI_PASSWORD 启用时全屏展示，验证通过后才进入主界面 -->
+    <div class="login-overlay hidden" id="loginOverlay">
+        <div class="login-panel" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+            <div class="login-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <h3 class="login-title" id="loginTitle">Cert Web UI</h3>
+            <p class="login-sub">此页面受访问密码保护<br>请输入密码后继续</p>
+            <input type="password" id="loginPwd" placeholder="访问密码" autocomplete="current-password">
+            <div class="login-err" id="loginErr"></div>
+            <button type="button" id="loginBtn">登 录</button>
+        </div>
+    </div>
 
     <!-- 全局轻提示容器：由 toast() 动态填充 -->
     <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
@@ -1048,24 +1057,97 @@
         opts.headers = opts.headers || {};
         if (UI_PWD) opts.headers['X-UI-Password'] = UI_PWD;
         const res = await fetch(url, opts);
-        if (res.status === 401) { toast('访问密码错误', 'err'); throw new Error('unauthorized'); }
+        if (res.status === 401) { leaveToLogin('访问密码已失效，请重新登录'); throw new Error('unauthorized'); }
         return res;
     }
 
-    function savePw() {
-        UI_PWD = document.getElementById('pwInput').value;
-        document.getElementById('pwStatus').textContent = '已保存';
-        loadAll();
+    /* ---------- 访问认证（登录页） ---------- */
+    const PWD_KEY = 'cert_ui_pwd';
+    let loggingIn = false;
+
+    function showLogin(msg) {
+        const ov = document.getElementById('loginOverlay');
+        const firstOpen = ov.classList.contains('hidden');
+        ov.classList.remove('hidden');
+        document.getElementById('loginErr').textContent = msg || '';
+        if (firstOpen) {
+            const inp = document.getElementById('loginPwd');
+            inp.value = '';
+            setTimeout(function () { inp.focus(); }, 60);
+        }
+    }
+
+    // 密码失效 / 主动登出：清凭据并回到登录页
+    function leaveToLogin(msg) {
+        UI_PWD = '';
+        try { localStorage.removeItem(PWD_KEY); } catch (e) {}
+        showLogin(msg);
+    }
+
+    // 校验密码：200 = 正确，401 = 错误
+    async function checkPwd(pwd) {
+        try {
+            const res = await fetch('/api/auth/check', { headers: { 'X-UI-Password': pwd } });
+            return res.ok;
+        } catch (e) { return false; }
+    }
+
+    async function enterApp() {
+        document.getElementById('loginOverlay').classList.add('hidden');
+        await loadAll();
+    }
+
+    async function doLogin() {
+        if (loggingIn) return;
+        const pwd = document.getElementById('loginPwd').value;
+        const err = document.getElementById('loginErr');
+        if (!pwd) { err.textContent = '请输入访问密码'; return; }
+        const btn = document.getElementById('loginBtn');
+        loggingIn = true; btn.disabled = true; btn.textContent = '验证中…';
+        if (await checkPwd(pwd)) {
+            UI_PWD = pwd;
+            try { localStorage.setItem(PWD_KEY, pwd); } catch (e) {}
+            loggingIn = false; btn.disabled = false; btn.textContent = '登 录';
+            await enterApp();
+        } else {
+            loggingIn = false; btn.disabled = false; btn.textContent = '登 录';
+            err.textContent = '密码错误，请重试';
+            const p = document.querySelector('.login-panel');
+            p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake');
+        }
     }
 
     async function loadConfig() {
+        let need = false;
         try {
-            const json = await (await fetch('/api/config')).json();
-            AUTH_REQUIRED = !!json.auth_required;
-            if (AUTH_REQUIRED) document.getElementById('pwbar').style.display = 'flex';
-            else loadAll();
+            need = !!(await (await fetch('/api/config')).json()).auth_required;
         } catch (e) { console.error(e); }
+        AUTH_REQUIRED = need;
+        if (!need) { loadAll(); return; }
+        // 已存密码则静默验证实现免登录；失效（如后端改了密码）则清掉并显示登录页
+        let saved = '';
+        try { saved = localStorage.getItem(PWD_KEY) || ''; } catch (e) {}
+        if (saved && await checkPwd(saved)) {
+            UI_PWD = saved;
+            await enterApp();
+        } else {
+            if (saved) { try { localStorage.removeItem(PWD_KEY); } catch (e) {} }
+            showLogin('');
+        }
     }
+
+    // 退出登录：清除凭据；启用密码时弹回登录页，未启用时提示即可
+    function logout() {
+        UI_PWD = '';
+        try { localStorage.removeItem(PWD_KEY); } catch (e) {}
+        if (AUTH_REQUIRED) { showLogin('已退出登录'); }
+        else { toast('未启用访问密码，无需退出', 'info'); }
+    }
+
+    document.getElementById('loginBtn').onclick = doLogin;
+    document.getElementById('loginPwd').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
+    });
 
     async function loadAll() {
         await Promise.all([loadCerts(), loadBackendStatus(false)]);
@@ -1915,6 +1997,8 @@
         ov.addEventListener('click', function (e) { if (e.target === ov) shut(); });
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shut(); });
     })();
+
+    document.getElementById('logoutBtn').onclick = logout;
 
     loadConfig();
 </script>
