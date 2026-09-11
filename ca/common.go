@@ -8,12 +8,13 @@ import (
 
 // IssueRequest 是签发接口的请求参数。
 type IssueRequest struct {
-	Domain    string `json:"domain"`
-	Name      string `json:"name"`
-	SANs      string `json:"sans"`
-	Duration  string `json:"duration"`
-	KeyType   string `json:"key_type"`
-	AutoRenew bool   `json:"auto_renew"`
+	Domain      string `json:"domain"`
+	Name        string `json:"name"`
+	SANs        string `json:"sans"`
+	Duration    string `json:"duration"`
+	KeyType     string `json:"key_type"`
+	AutoRenew   bool   `json:"auto_renew"`
+	Description string `json:"description"` // 备注描述（可选，支持中文）
 }
 
 // IssueResult 是签发成功后的返回。
