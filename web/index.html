@@ -447,6 +447,8 @@
         .confirm-panel { width: 100%; max-width: 430px; max-height: calc(100vh - 40px); overflow: auto; padding: 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 24px 60px rgba(15,23,42,0.4); }
         .confirm-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--text); }
         .confirm-msg { font-size: 13.5px; line-height: 1.75; color: var(--kv); white-space: pre-line; overflow-wrap: anywhere; }
+        .confirm-expect { margin-top: 14px; }
+        .confirm-expect input { margin-top: 8px; font-family: ui-monospace, Consolas, monospace; }
         .confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
         .confirm-actions button { margin-top: 0; padding: 9px 20px; font-size: 13.5px; }
 
@@ -707,6 +709,10 @@
         <div class="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
             <h3 class="confirm-title" id="confirmTitle">确认操作</h3>
             <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-expect hidden" id="confirmExpect">
+                <div class="hint" id="confirmExpectHint"></div>
+                <input type="text" id="confirmInput" autocomplete="off" spellcheck="false">
+            </div>
             <div class="confirm-actions">
                 <button type="button" class="ghost" id="confirmCancel">取消</button>
                 <button type="button" id="confirmOk">确认</button>
@@ -927,19 +933,34 @@
     }
 
     /* ---------- 应用内确认弹窗 ---------- */
-    // appConfirm({title,message,confirmText,danger}) -> Promise<boolean>；Esc/遮罩/取消=false，Enter/确认=true
+    // appConfirm({title,message,expect,confirmText,danger}) -> Promise<boolean>；Esc/遮罩/取消=false，Enter/确认=true
+    // 传 expect 时须逐字输入该文本才解锁确认按钮（高危操作防误触，如吊销/删除证书）
     function appConfirm(opts) {
         opts = opts || {};
         return new Promise(function (resolve) {
             var ov = document.getElementById('confirmOverlay');
             var okBtn = document.getElementById('confirmOk');
             var cancelBtn = document.getElementById('confirmCancel');
+            var expectWrap = document.getElementById('confirmExpect');
+            var expectHint = document.getElementById('confirmExpectHint');
+            var expectInput = document.getElementById('confirmInput');
             if (!ov) { resolve(false); return; }
 
             document.getElementById('confirmTitle').textContent = opts.title || '确认操作';
             document.getElementById('confirmMsg').textContent = opts.message || '';
             okBtn.textContent = opts.confirmText || '确认';
             okBtn.className = opts.danger ? 'danger' : '';
+            if (opts.expect) {
+                expectWrap.classList.remove('hidden');
+                expectHint.textContent = '输入 ' + opts.expect + ' 以确认：';
+                expectInput.value = '';
+                okBtn.disabled = true;
+                expectInput.oninput = function () { okBtn.disabled = this.value !== opts.expect; };
+            } else {
+                expectWrap.classList.add('hidden');
+                expectInput.oninput = null;
+                okBtn.disabled = false;
+            }
 
             var done = false;
             function finish(v) {
@@ -947,21 +968,27 @@
                 done = true;
                 ov.classList.add('hidden');
                 okBtn.onclick = cancelBtn.onclick = ov.onclick = null;
+                expectInput.oninput = null;
+                expectInput.value = '';
+                okBtn.disabled = false;
                 document.removeEventListener('keydown', onKey, true);
                 resolve(v);
             }
             // capture 阶段拦截：优先于各面板自己的 Esc 收起逻辑
             function onKey(e) {
                 if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
-                else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+                else if (e.key === 'Enter') { e.preventDefault(); if (!okBtn.disabled) finish(true); }
             }
             okBtn.onclick = function () { finish(true); };
             cancelBtn.onclick = function () { finish(false); };
             ov.onclick = function (e) { if (e.target === ov) finish(false); };
             document.addEventListener('keydown', onKey, true);
             ov.classList.remove('hidden');
-            // 危险操作默认聚焦「取消」，避免一记回车就把高危操作放行
-            setTimeout(function () { (opts.danger ? cancelBtn : okBtn).focus(); }, 30);
+            // 有输入门槛时聚焦输入框（确认按钮此时禁用，安全）；否则危险操作聚焦「取消」，避免一记回车放行
+            setTimeout(function () {
+                if (opts.expect) expectInput.focus();
+                else (opts.danger ? cancelBtn : okBtn).focus();
+            }, 30);
         });
     }
 
@@ -1547,7 +1574,8 @@
     async function doRevoke(name, btn) {
         if (!(await appConfirm({
             title: '吊销证书',
-            message: '确认吊销「' + decodeURIComponent(name) + '」？\n吊销后该证书进入 CRL，已安装 CRL 的客户端将拒绝它。',
+            message: '吊销「' + decodeURIComponent(name) + '」后，该证书进入 CRL，已安装 CRL 的客户端将拒绝它。',
+            expect: decodeURIComponent(name),
             confirmText: '确认吊销',
             danger: true,
         }))) return;
@@ -1562,7 +1590,8 @@
     async function doDelete(name, btn) {
         if (!(await appConfirm({
             title: '删除证书文件',
-            message: '确认删除「' + decodeURIComponent(name) + '」的证书文件？\n文件将从磁盘移除，此操作不可恢复。',
+            message: '「' + decodeURIComponent(name) + '」的证书与私钥文件将从磁盘移除，此操作不可恢复。',
+            expect: decodeURIComponent(name),
             confirmText: '确认删除',
             danger: true,
         }))) return;
