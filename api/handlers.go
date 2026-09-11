@@ -34,8 +34,7 @@ func writeError(w http.ResponseWriter, msg string) {
 	writeJSON(w, map[string]any{"success": false, "error": msg})
 }
 
-// withAuth 是访问门禁中间件：配置了 UI_PASSWORD 时校验 X-UI-Password 头或 ui_password 查询参数。
-// 连续 5 次失败后按 IP 锁定 30 秒（见 authlimit.go），缓解暴力枚举。
+// withAuth 门禁中间件：校验 X-UI-Password 头或 ui_password 参数，连续失败按 IP 限流
 func withAuth(cfg config.Config, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.UIPassword == "" {
@@ -63,10 +62,7 @@ func withAuth(cfg config.Config, h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// passwordOK 以常量时间比较口令。
-//
-// 先各自取 SHA-256 再比对：直接比 []byte 时 ConstantTimeCompare 会在长度不等时
-// 立即返回，长度信息仍会通过耗时泄漏；摘要长度固定，比较全程不依赖输入内容。
+// passwordOK 常量时间比较：先取 SHA-256 再比，避免长度不等时提前返回泄漏长度
 func passwordOK(r *http.Request, want string) bool {
 	got := r.Header.Get("X-UI-Password")
 	if got == "" {
@@ -97,12 +93,7 @@ func relInRoot(rootDir, target string) (string, error) {
 	return rel, nil
 }
 
-// downloadHandler 提供证书 / 私钥下载。
-//
-// 请求参数是绝对路径，但打开文件时把解析工作交给 os.Root：内核按已打开的
-// 目录 fd 逐级解析，符号链接与 ".." 都无法逃逸出输出目录。
-// 这取代了此前「先 filepath.Abs 再比字符串前缀」的写法——那种写法在大小写不敏感
-// 的文件系统与符号链接面前都不成立。
+// downloadHandler 证书/私钥下载：os.Root 沙箱打开，符号链接与 ".." 无法逃逸输出目录
 func downloadHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filePath := strings.TrimSpace(r.URL.Query().Get("file"))
@@ -289,8 +280,7 @@ func backendStatusHandler(cfg config.Config) http.HandlerFunc {
 	}
 }
 
-// backendRootRotateHandler 轮换根证书：归档旧根 → 生成新根 →（可选）用新根全量重签。
-// 服务端强制校验 confirm 必须等于当前根证书 CN，避免误触或绕过前端提示直接调接口。
+// backendRootRotateHandler 轮换根证书；服务端硬校验 confirm 必须等于当前根 CN
 func backendRootRotateHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -331,8 +321,7 @@ func backendRootArchivesHandler(cfg config.Config) http.HandlerFunc {
 	}
 }
 
-// backendRootRollbackHandler 回滚根证书：把归档中的历史根恢复为当前根，并用它重签全部已签发证书。
-// 与轮换一致，服务端强制校验 confirm 必须等于「当前」根证书的 CN。
+// backendRootRollbackHandler 回滚根证书；confirm 硬校验同轮换
 func backendRootRollbackHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -358,8 +347,7 @@ func backendRootRollbackHandler(cfg config.Config) http.HandlerFunc {
 	}
 }
 
-// backendCRLHandler 提供 CRL 下载（尚未产生吊销记录时返回 404）。
-// 这里的错误响应保持纯文本：前端 downloadPem 会把响应体原文当提示语直接用。
+// backendCRLHandler CRL 下载；错误保持纯文本，前端 downloadPem 直接用作提示语
 func backendCRLHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := ca.CRLPath(cfg)
@@ -403,8 +391,7 @@ func renewStatusHandler() http.HandlerFunc {
 	}
 }
 
-// renewScanHandler 立即触发一次自动续签扫描（异步执行）。
-// started=false 表示已有一轮扫描在跑，本次被跳过。
+// renewScanHandler 手动触发扫描（异步）；started=false 表示已有扫描在跑被跳过
 func renewScanHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		started := scheduler.ScanNow(cfg)
