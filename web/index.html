@@ -276,6 +276,8 @@
         .login-title { margin: 0 0 6px; font-size: 18px; color: var(--text); }
         .login-sub { margin: 0 0 18px; font-size: 12.5px; color: var(--subtitle); line-height: 1.7; }
         .login-panel input { text-align: center; margin: 0; }
+        .login-remember { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--subtitle); cursor: pointer; }
+        .login-remember input { width: auto; margin: 0; accent-color: var(--accent); }
         .login-err { min-height: 18px; margin: 8px 0 2px; font-size: 12px; color: var(--err); }
         .login-panel button { margin: 0; width: 100%; padding: 10px; font-size: 14px; }
         .login-panel.shake { animation: loginShake .35s; }
@@ -699,6 +701,7 @@
             <h3 class="login-title" id="loginTitle">Cert Web UI</h3>
             <p class="login-sub">此页面受访问密码保护<br>请输入密码后继续</p>
             <input type="password" id="loginPwd" placeholder="访问密码" autocomplete="current-password">
+            <label class="login-remember"><input type="checkbox" id="loginRemember" checked> 在此设备上记住密码</label>
             <div class="login-err" id="loginErr"></div>
             <button type="button" id="loginBtn">登 录</button>
         </div>
@@ -879,7 +882,6 @@
 </div>
 
 <script>
-    const APP_VERSION = 'v1.0.0';   // 仅首帧兜底；接口返回 st.version 后顶栏会覆盖
     const APP_DESC = '自建 CA · 证书管理平台';   // 顶部标题栏简介
     // 作者名与链接由 /api/backend/status 下发（config/config.go 里硬编码），前端不再维护
 
@@ -1062,7 +1064,8 @@
     }
 
     /* ---------- 访问认证（登录页） ---------- */
-    const PWD_KEY = 'cert_ui_pwd';
+    const PWD_KEY = 'cert_ui_pwd';            // 勾选记住：localStorage，跨会话保留
+    const PWD_KEY_SESSION = 'cert_ui_pwd_s';  // 未勾选：sessionStorage，关浏览器即失效
     let loggingIn = false;
 
     function showLogin(msg) {
@@ -1077,10 +1080,11 @@
         }
     }
 
-    // 密码失效 / 主动登出：清凭据并回到登录页
+    // 密码失效 / 主动登出：清凭据（两种存储都清）并回到登录页
     function leaveToLogin(msg) {
         UI_PWD = '';
         try { localStorage.removeItem(PWD_KEY); } catch (e) {}
+        try { sessionStorage.removeItem(PWD_KEY_SESSION); } catch (e) {}
         showLogin(msg);
     }
 
@@ -1106,7 +1110,16 @@
         loggingIn = true; btn.disabled = true; btn.textContent = '验证中…';
         if (await checkPwd(pwd)) {
             UI_PWD = pwd;
-            try { localStorage.setItem(PWD_KEY, pwd); } catch (e) {}
+            const remember = document.getElementById('loginRemember').checked;
+            try {
+                if (remember) {
+                    sessionStorage.removeItem(PWD_KEY_SESSION);
+                    localStorage.setItem(PWD_KEY, pwd);
+                } else {
+                    localStorage.removeItem(PWD_KEY);
+                    sessionStorage.setItem(PWD_KEY_SESSION, pwd);
+                }
+            } catch (e) {}
             loggingIn = false; btn.disabled = false; btn.textContent = '登 录';
             await enterApp();
         } else {
@@ -1124,14 +1137,21 @@
         } catch (e) { console.error(e); }
         AUTH_REQUIRED = need;
         if (!need) { loadAll(); return; }
-        // 已存密码则静默验证实现免登录；失效（如后端改了密码）则清掉并显示登录页
+        // 已存密码（记住我 → localStorage；未勾选 → sessionStorage）则静默验证实现免登录；
+        // 失效（如后端改了密码）则清掉并显示登录页
         let saved = '';
-        try { saved = localStorage.getItem(PWD_KEY) || ''; } catch (e) {}
+        try {
+            saved = localStorage.getItem(PWD_KEY) || '';
+            if (!saved) saved = sessionStorage.getItem(PWD_KEY_SESSION) || '';
+        } catch (e) {}
         if (saved && await checkPwd(saved)) {
             UI_PWD = saved;
             await enterApp();
         } else {
-            if (saved) { try { localStorage.removeItem(PWD_KEY); } catch (e) {} }
+            if (saved) {
+                try { localStorage.removeItem(PWD_KEY); } catch (e) {}
+                try { sessionStorage.removeItem(PWD_KEY_SESSION); } catch (e) {}
+            }
             showLogin('');
         }
     }
@@ -1140,6 +1160,7 @@
     function logout() {
         UI_PWD = '';
         try { localStorage.removeItem(PWD_KEY); } catch (e) {}
+        try { sessionStorage.removeItem(PWD_KEY_SESSION); } catch (e) {}
         if (AUTH_REQUIRED) { showLogin('已退出登录'); }
         else { toast('未启用访问密码，无需退出', 'info'); }
     }
@@ -1422,7 +1443,7 @@
         if (!el) return;
         if (!BACKEND) { el.textContent = '加载中…'; return; }
         el.innerHTML =
-            kvRow('版本', escapeHtml(BACKEND.version || APP_VERSION)) +
+            kvRow('版本', escapeHtml(BACKEND.version || '—')) +
             kvRow('启动时间', escapeHtml(fmtTime(BACKEND.started_at))) +
             kvRow('运行时长', escapeHtml(fmtUptime(BACKEND.uptime_seconds))) +
             kvRow('监听端口', '<code>' + escapeHtml(BACKEND.port || '—') + '</code>') +
@@ -1668,7 +1689,7 @@
     (function initFooter() {
         const bs = document.getElementById('brandSub');
         if (bs) bs.textContent = APP_DESC;
-        document.getElementById('sideVersion').textContent = APP_VERSION;
+        document.getElementById('sideVersion').textContent = '—'; // 等接口返回后覆盖
     })();
 
     // Dock 位置：左 / 下 / 右 / 上（上=顶栏下方靠左的状态栏），持久化到 localStorage
