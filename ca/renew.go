@@ -14,18 +14,14 @@ import (
 	"cert-web-ui/store"
 )
 
-// Renew 使用目录中已有的私钥重新签发证书（保留原 CN 与 SAN），并刷新 metadata。
-// 内置 CA 形态下续签就是「重签」：私钥在手，进程内完成，无需任何外部凭证。
+// Renew 用原私钥按当前根重签（保留 CN/SAN）并刷新 metadata，私钥字节不变
 func Renew(cfg config.Config, folder string) error {
 	swapMu.RLock()
 	defer swapMu.RUnlock()
 	return renewLocked(cfg, folder)
 }
 
-// renewLocked 是 Renew 的加锁内核。
-//
-// 换根流程自身已经持有 swapMu 的写锁，此时再调用 Renew 会因 RWMutex
-// 不可重入而自我死锁，因此重签路径统一走这个不加锁的版本。
+// renewLocked 不加锁内核：换根流程已持写锁，RWMutex 不可重入，重签统一走这里
 func renewLocked(cfg config.Config, folder string) error {
 	if err := store.ValidLeafName(folder); err != nil {
 		return err
@@ -63,7 +59,7 @@ func renewLocked(cfg config.Config, folder string) error {
 		return err
 	}
 
-	// 沿用原有效期；metadata 缺失时回退默认（1 年）
+	// 沿用原有效期，metadata 缺失回退默认 1 年
 	validity := cfg.LeafValidity
 	if hasMeta && strings.TrimSpace(meta.Duration) != "" {
 		if d, e := time.ParseDuration(meta.Duration); e == nil && d > 0 {
