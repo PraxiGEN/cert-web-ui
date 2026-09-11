@@ -88,7 +88,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          # v1.2.3 → ghcr.io/<owner>/<repo>:1.2.3 与 :latest（镜像名自动转小写）
+          # v1.2.3 → ghcr.io/praxigen/cert-web-ui:v1.2.3 与 :latest（镜像名自动转小写）
           tags: |
             ghcr.io/${{ github.repository }}:${{ env.VERSION }}
             ghcr.io/${{ github.repository }}:latest

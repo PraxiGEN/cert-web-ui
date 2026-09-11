@@ -57,7 +57,7 @@ docker compose up -d
 2. **手动触发**：Actions 页面 Run workflow，可指定版本号
 3. **直接打 tag**：push `v*` tag
 
-镜像构建多架构（amd64 + arm64），tag 形如 `ghcr.io/<owner>/cert-web-ui:v1.2.3` 与 `:latest`，版本号自动注入运行时。仓库无需配置任何 secret。
+镜像构建多架构（amd64 + arm64），tag 形如 `ghcr.io/praxigen/cert-web-ui:v1.2.3` 与 `:latest`，版本号自动注入运行时。仓库无需配置任何 secret。
 
 ## 技术说明
 
