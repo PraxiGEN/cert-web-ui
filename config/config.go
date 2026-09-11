@@ -45,7 +45,7 @@ func Load() Config {
 		RootKeyType: getenv("CA_ROOT_KEY_TYPE", "ec-p256"),
 		OutputBase:  getenv("CERT_OUTPUT_BASE", filepath.Join(home, "certs")),
 		UIPassword:  os.Getenv("UI_PASSWORD"),
-		Port:        getenv("PORT", "8080"),
+		Port:        getenv("PORT", "16850"),
 		IndexPath:   getenv("INDEX_HTML", "web/index.html"),
 		Version:     getenv("APP_VERSION", "v1.0.0"),
 

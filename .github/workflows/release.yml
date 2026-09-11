@@ -1,22 +1,77 @@
-# 自动发布 Docker 镜像到 GHCR（ghcr.io）。
-# 触发：推送 v* 格式的 tag（如 v1.0.1）→ 构建多架构镜像并推送。
-# 鉴权用 Actions 内置 GITHUB_TOKEN，无需在仓库里配置任何 secret。
-# 使用前仅需把仓库 Settings → Actions → General → Workflow permissions 设为
-# 「Read and write permissions」（默认只读，写 packages 需要放开）。
+# 自动发布 Docker 镜像到 GHCR（ghcr.io）。三种触发方式：
+#
+# 1. 改版本自动发：修改 config/config.go 里 getenv("APP_VERSION", "vX.Y.Z") 的默认值
+#    并 push 到 main → 检测到该版本号尚无对应 tag → 自动打 tag 并发布。
+# 2. 手动发：Actions 页面 Run workflow，版本号可留空（=用 config.go 里的默认值），
+#    或填 v1.2.3 / 1.2.3 指定一个新版本。
+# 3. 直接打 tag：push v* tag → 立即发布该版本。
+#
+# 鉴权用 Actions 内置 GITHUB_TOKEN，仓库无需配置任何 secret。
+# 注意：内置 GITHUB_TOKEN 打的 tag 不会再触发新的 workflow run（GitHub 防递归），
+# 因此「打 tag」与「构建发布」必须串在本 workflow 内（docker job needs resolve）。
+#
+# 首次使用：仓库 Settings → Actions → General → Workflow permissions 设为
+# 「Read and write permissions」（打 tag 与写 packages 都需要）。
 name: release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号（如 v1.2.3；留空 = 使用 config.go 里的 APP_VERSION）"
+        required: false
+        type: string
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
+  # 确定要发布的版本：手动输入 > config.go 默认值 > （tag 触发时跳过本 job）。
+  # 版本对应的 tag 已存在则视为「已发布过」，跳过发布，避免重复覆盖。
+  resolve:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'push' || github.ref_type != 'tag' }}
+    outputs:
+      version: ${{ steps.v.outputs.version }} # 形如 v1.2.3；未发布时为空
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史来比对已有 tag
+
+      - id: v
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VER="$INPUT_VERSION"
+          else
+            VER=$(grep -oP '(?<=APP_VERSION", ")[^"]+' config/config.go)
+            echo "从 config.go 读到版本: $VER"
+          fi
+          TAG="v${VER#v}" # 统一成 v 前缀
+          if git tag -l | grep -qx "$TAG"; then
+            echo "$TAG 已存在（版本未变更或已发布过），跳过发布"
+            echo "version=" >> "$GITHUB_OUTPUT"
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
   docker:
     runs-on: ubuntu-latest
+    needs: resolve
+    # tag 触发时 resolve 被跳过（tag 已存在），直接用 ref 名构建；
+    # main push / 手动触发时必须拿到 resolve 产出的新版本号，否则（版本未变）不发布。
+    if: ${{ !cancelled() && (needs.resolve.result == 'skipped' || needs.resolve.outputs.version != '') }}
+    env:
+      VERSION: ${{ needs.resolve.outputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,23 +83,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # tag v1.2.3 → ghcr.io/<owner>/<repo>:1.2.3 + :1.2（latest 由语义化规则覆盖）
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
       - uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # v1.2.3 → ghcr.io/<owner>/<repo>:1.2.3 与 :latest（镜像名自动转小写）
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+            ghcr.io/${{ github.repository }}:latest
           build-args: |
-            APP_VERSION=${{ github.ref_name }}
+            APP_VERSION=${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
