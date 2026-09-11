@@ -32,7 +32,7 @@ var (
 
 // Version 版本号：默认值随发版更新；CI 构建时经 -ldflags "-X cert-web-ui/config.Version=vX.Y.Z" 编译期覆盖。
 // 刻意不读取 APP_VERSION 环境变量——部署模板残留的旧环境变量会永久遮蔽镜像的真实版本。
-var Version = "v1.0.4"
+var Version = "v1.0.5"
 
 // Load 从环境变量读取配置，缺失时使用默认值
 func Load() Config {
