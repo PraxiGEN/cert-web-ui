@@ -1,6 +1,4 @@
 # 构建阶段：编译 Go 单二进制
-# 版本号经 -ldflags 编译期烙进二进制，不走运行时环境变量
-# （部署模板残留的 APP_VERSION 环境变量不会再遮蔽镜像真实版本）。
 FROM golang:1.27-alpine AS build
 WORKDIR /src
 COPY go.mod ./
@@ -10,7 +8,6 @@ COPY ca ./ca
 COPY api ./api
 COPY main.go ./main.go
 COPY scheduler ./scheduler
-# CI 发版经 --build-arg APP_VERSION 传入；本地构建留空时使用 config.go 里 var Version 的默认值
 ARG APP_VERSION
 RUN set -eux; \
     if [ -n "${APP_VERSION:-}" ]; then \
