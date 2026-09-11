@@ -21,22 +21,16 @@ type Config struct {
 	Port          string        // 监听端口
 	IndexPath     string        // 前端 index.html 路径
 	Version       string        // 应用版本号（日志与页面共用同一来源）
-	AuthorName    string        // 作者 / 项目名（硬编码，随二进制发布）
-	AuthorURL     string        // 作者链接（硬编码，留空则前端不渲染为链接）
+	AuthorName    string
+	AuthorURL     string
 }
 
-// authorName / authorURL 是编译期元数据：改作者信息只动这里，重新构建即生效，
-// 不走环境变量——它和版本号一样属于「这份二进制是谁的产物」，而非部署期配置。
 var (
 	authorName = "作者"
-	authorURL  = "" // 改为你的 GitHub / 联系方式链接（留空则不跳转）
+	authorURL  = "https://github.com/PraxiGEN/cert-web-ui"
 )
 
-// Load 从环境变量读取配置，缺失时使用默认值。
-//
-// 根证书路径刻意不单独配置：它恒为 CA_HOME/root_ca.crt，与轮换、归档、CRL 的落盘
-// 位置共用同一个目录常量。此前存在 CA_ROOT_CERT 变量，只有展示与下载读它、
-// 而真正的加载/生成/归档全部走 CA_HOME，一旦设置就变成「页面显示 A、实际在用 B」。
+// Load 从环境变量读取配置，缺失时使用默认值
 func Load() Config {
 	home := getenv("CA_HOME", "/data")
 	c := Config{

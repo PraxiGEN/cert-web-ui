@@ -10,11 +10,8 @@ COPY main.go ./main.go
 COPY scheduler ./scheduler
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/cert-web-ui .
 
-# 运行阶段：仅需二进制与前端页面，无任何外部 CA 依赖
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
-# 由 CI 传入 git tag（如 v1.2.3），成为运行时版本号的默认值；
-# 容器仍可用 -e APP_VERSION 覆盖。
 ARG APP_VERSION=v1.0.0
 ENV APP_VERSION=${APP_VERSION}
 WORKDIR /app

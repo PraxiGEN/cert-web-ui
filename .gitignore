@@ -1,6 +1,3 @@
 # 本地运行产物（CA 与证书数据都在 Docker 卷里，不应入库）
 /data/
 /certs/
-
-# WorkBuddy 会话工作数据（记忆、预览截图）
-.workbuddy/

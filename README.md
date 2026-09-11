@@ -22,7 +22,7 @@ docker run -d --name cert-web-ui \
   -v cert-ca-data:/data \
   -e CA_NAME="Home Root CA" \
   --restart unless-stopped \
-  ghcr.io/<owner>/cert-web-ui:latest
+  ghcr.io/praxigen/cert-web-ui:latest
 ```
 
 打开 `http://<主机>:9280`，首页下载根证书并信任到客户端，即可开始签发。
