@@ -13,9 +13,10 @@ import (
 
 // ImportRequest 是导入证书的请求参数。
 type ImportRequest struct {
-	Name string `json:"name"` // 文件夹名（将清洗）
-	CRT  string `json:"crt"`  // 证书 PEM（必填）
-	Key  string `json:"key"`  // 私钥 PEM（可选）
+	Name        string `json:"name"`       // 文件夹名（将清洗）
+	CRT         string `json:"crt"`        // 证书 PEM（必填）
+	Key         string `json:"key"`        // 私钥 PEM（可选）
+	Description string `json:"description"` // 备注描述（可选，支持中文）
 }
 
 // ImportResult 是导入成功后的返回。
@@ -74,14 +75,15 @@ func Import(cfg config.Config, req ImportRequest) (ImportResult, error) {
 	}
 
 	meta := store.Metadata{
-		Domain:    info.Subject,
-		Folder:    name,
-		SANs:      append(info.DNSNames, info.IPs...),
-		IssuedAt:  info.NotBefore,
-		Serial:    info.Serial,
-		ExpiresAt: info.NotAfter,
-		Origin:    "imported",
-		AutoRenew: false,
+		Domain:      info.Subject,
+		Folder:      name,
+		SANs:        append(info.DNSNames, info.IPs...),
+		IssuedAt:    info.NotBefore,
+		Serial:      info.Serial,
+		ExpiresAt:   info.NotAfter,
+		Origin:      "imported",
+		AutoRenew:   false,
+		Description: store.SanitizeDescription(req.Description),
 	}
 	if err := store.WriteMeta(outputDir, meta); err != nil {
 		return ImportResult{}, fmt.Errorf("写入元数据失败: %w", err)
