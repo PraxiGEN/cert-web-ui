@@ -37,6 +37,7 @@ type CertEntry struct {
 	HasKey    bool      `json:"has_key"`
 	SANs      []string  `json:"sans"`
 	KeyType   string    `json:"key_type"`
+	Duration  string    `json:"duration,omitempty"` // 签发时长（如 8760h0m0s），编辑重签预填用
 	AutoRenew bool      `json:"auto_renew"`
 	Serial    string    `json:"serial"`
 	NotBefore time.Time `json:"not_before"`
@@ -153,6 +154,7 @@ func ListCerts(outputBase string, renewBefore time.Duration) ([]CertEntry, error
 		if m, ok := ReadMeta(dir); ok {
 			entry.Domain = m.Domain
 			entry.KeyType = m.KeyType
+			entry.Duration = m.Duration
 			entry.AutoRenew = m.AutoRenew
 			entry.Serial = m.Serial
 			entry.IssuedAt = m.IssuedAt
