@@ -12,18 +12,19 @@ import (
 
 // Metadata 与 .crt/.key 同目录存放；时间字段用 omitzero（omitempty 对结构体字段永不判空）
 type Metadata struct {
-	Domain    string    `json:"domain"`
-	Folder    string    `json:"folder"`
-	SANs      []string  `json:"sans"`
-	KeyType   string    `json:"key_type"`
-	Duration  string    `json:"duration"`
-	IssuedAt  time.Time `json:"issued_at"`
-	AutoRenew bool      `json:"auto_renew"`
-	Serial    string    `json:"serial,omitempty"`
-	ExpiresAt time.Time `json:"expires_at,omitzero"`
-	Origin    string    `json:"origin,omitempty"` // issued（本系统签发）/ imported（导入归档）
-	Revoked   bool      `json:"revoked,omitempty"`
-	RevokedAt time.Time `json:"revoked_at,omitzero"`
+	Domain      string    `json:"domain"`
+	Folder      string    `json:"folder"`
+	SANs        []string  `json:"sans"`
+	KeyType     string    `json:"key_type"`
+	Duration    string    `json:"duration"`
+	IssuedAt    time.Time `json:"issued_at"`
+	AutoRenew   bool      `json:"auto_renew"`
+	Serial      string    `json:"serial,omitempty"`
+	ExpiresAt   time.Time `json:"expires_at,omitzero"`
+	Origin      string    `json:"origin,omitempty"` // issued（本系统签发）/ imported（导入归档）
+	Revoked     bool      `json:"revoked,omitempty"`
+	RevokedAt   time.Time `json:"revoked_at,omitzero"`
+	Description string    `json:"description,omitempty"` // 备注描述（纯展示，支持中文）
 }
 
 // CertEntry 是列表/详情返回给前端的证书条目。
@@ -36,6 +37,7 @@ type CertEntry struct {
 	HasKey    bool      `json:"has_key"`
 	SANs      []string  `json:"sans"`
 	KeyType   string    `json:"key_type"`
+	Duration  string    `json:"duration,omitempty"` // 签发时长（如 8760h0m0s），编辑重签预填用
 	AutoRenew bool      `json:"auto_renew"`
 	Serial    string    `json:"serial"`
 	NotBefore time.Time `json:"not_before"`
@@ -47,6 +49,7 @@ type CertEntry struct {
 	Origin    string    `json:"origin"`  // issued / imported
 	Revoked   bool      `json:"revoked"` // 已吊销
 	RevokedAt time.Time `json:"revoked_at,omitzero"`
+	Desc      string    `json:"description,omitempty"` // 备注描述
 }
 
 const metaFile = "metadata.json"
@@ -89,6 +92,21 @@ func ValidLeafName(name string) error {
 		return fmt.Errorf("名称不是合法的单层路径")
 	}
 	return nil
+}
+
+// SanitizeDescription 描述是纯展示文本：去控制字符（防日志/渲染注入）、TrimSpace、限长 200 字符
+func SanitizeDescription(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= 0x20 && r != 0x7f {
+			b.WriteRune(r)
+		}
+	}
+	rs := []rune(strings.TrimSpace(b.String()))
+	if len(rs) > 200 {
+		rs = rs[:200]
+	}
+	return string(rs)
 }
 
 // ListCerts 扫描输出目录返回全部证书条目，renewBefore 用于临期预警
@@ -136,12 +154,14 @@ func ListCerts(outputBase string, renewBefore time.Duration) ([]CertEntry, error
 		if m, ok := ReadMeta(dir); ok {
 			entry.Domain = m.Domain
 			entry.KeyType = m.KeyType
+			entry.Duration = m.Duration
 			entry.AutoRenew = m.AutoRenew
 			entry.Serial = m.Serial
 			entry.IssuedAt = m.IssuedAt
 			entry.SANs = m.SANs
 			entry.Revoked = m.Revoked
 			entry.RevokedAt = m.RevokedAt
+			entry.Desc = m.Description
 			if m.Origin != "" {
 				entry.Origin = m.Origin
 			}

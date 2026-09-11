@@ -200,6 +200,8 @@
         .result { margin-top: 16px; padding: 14px; background: var(--result-ok-bg); border-radius: 6px; border-left: 4px solid var(--result-ok-border); font-size: 14px; }
         .result.error { background: var(--result-err-bg); border-left-color: var(--result-err-border); }
         .hint { font-size: 12px; color: var(--hint); margin-top: 4px; }
+        .edit-banner { margin: 0 0 4px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 6px; background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: 13px; }
+        .edit-banner a { margin-left: 8px; }
         .err-text { color: var(--err); font-size: 12px; margin-top: 4px; display: none; }
         /* 统计卡片 */
         .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
@@ -240,11 +242,15 @@
         /* 证书列表：固定列宽比例 + 窄屏横向滚动（列宽不再被内容撑变形） */
         #certList { overflow-x: auto; }
         #certList table { table-layout: fixed; min-width: 800px; }
-        #certList th:nth-child(1) { width: 22%; }
-        #certList th:nth-child(2) { width: 16%; }
-        #certList th:nth-child(3) { width: 13%; }
-        #certList th:nth-child(4) { width: 19%; }
-        #certList th:nth-child(5) { width: 30%; }
+        /* 域名/SAN/状态/过期四列等宽，操作列加宽 */
+        #certList th:nth-child(1) { width: 18%; }
+        #certList th:nth-child(2) { width: 18%; }
+        #certList th:nth-child(3) { width: 18%; }
+        #certList th:nth-child(4) { width: 18%; }
+        #certList th:nth-child(5) { width: 28%; }
+        /* 首页即将到期：四列等分 */
+        #expiringList table { table-layout: fixed; }
+        #expiringList th { width: 25%; }
         #certList td { word-break: break-word; }
         /* 手机端（≤760px 由 JS 切换渲染）：证书卡片式布局；桌面端仍用表格 */
         .cert-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -259,6 +265,8 @@
         /* 域名行：域名 + 复制按钮 */
         .dom { display: flex; align-items: center; gap: 6px; }
         .dom strong { min-width: 0; word-break: break-all; }
+        .dom-block > * + * { margin-top: 4px; }
+        .dom-desc { color: var(--text); }
         .copy-btn { flex: none; padding: 2px 8px !important; font-size: 11px !important; margin: 0 !important; }
         /* 详情面板顶部操作 */
         .detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
@@ -447,6 +455,8 @@
         .confirm-panel { width: 100%; max-width: 430px; max-height: calc(100vh - 40px); overflow: auto; padding: 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 24px 60px rgba(15,23,42,0.4); }
         .confirm-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--text); }
         .confirm-msg { font-size: 13.5px; line-height: 1.75; color: var(--kv); white-space: pre-line; overflow-wrap: anywhere; }
+        .confirm-expect { margin-top: 14px; }
+        .confirm-expect input { margin-top: 8px; font-family: ui-monospace, Consolas, monospace; }
         .confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
         .confirm-actions button { margin-top: 0; padding: 9px 20px; font-size: 13.5px; }
 
@@ -594,11 +604,16 @@
             <div class="card subpanel" data-sub="issue">
                 <h3>签发新证书</h3>
                 <form id="certForm">
+                    <div class="edit-banner hidden" id="editBanner">正在编辑重签 <strong id="editName"></strong>：提交后将生成新私钥并替换该目录下的证书与私钥（吊销状态不保留）。<a href="javascript:void(0)" onclick="cancelEdit()">取消编辑</a></div>
                     <div class="row">
                         <div>
                             <label>名称（文件夹名，仅英文/数字/连字符）*</label>
                             <input type="text" name="name" placeholder="例如 my-server" autocomplete="off">
                             <div class="err-text" id="nameErr">名称只能包含英文字母、数字、连字符(-)和下划线(_)</div>
+                        </div>
+                        <div>
+                            <label>描述（可选，支持中文）</label>
+                            <input type="text" name="description" maxlength="200" placeholder="例如：NAS 面板证书" autocomplete="off">
                         </div>
                     </div>
                     <label>域名 / SAN（每行一个，第一行作为证书主域名 CN）</label>
@@ -638,8 +653,16 @@
                 <h3>导入外部证书（归档）</h3>
                 <p class="hint">导入由其他 CA 签发的证书，仅用于集中查看与到期提醒；不支持续签与吊销。</p>
                 <form id="importForm">
-                    <label>名称（文件夹名，仅英文/数字/连字符）*</label>
-                    <input type="text" name="name" placeholder="例如 imported-server" autocomplete="off">
+                    <div class="row">
+                        <div>
+                            <label>名称（文件夹名，仅英文/数字/连字符）*</label>
+                            <input type="text" name="name" placeholder="例如 imported-server" autocomplete="off">
+                        </div>
+                        <div>
+                            <label>描述（可选，支持中文）</label>
+                            <input type="text" name="description" maxlength="200" placeholder="例如：从旧 CA 迁移的网关证书" autocomplete="off">
+                        </div>
+                    </div>
                     <label>证书内容（PEM，含 -----BEGIN CERTIFICATE-----）*</label>
                     <textarea name="crt" rows="6" placeholder="粘贴证书 PEM 内容"></textarea>
                     <label>私钥（可选，PEM）</label>
@@ -707,6 +730,10 @@
         <div class="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
             <h3 class="confirm-title" id="confirmTitle">确认操作</h3>
             <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-expect hidden" id="confirmExpect">
+                <div class="hint" id="confirmExpectHint"></div>
+                <input type="text" id="confirmInput" autocomplete="off" spellcheck="false">
+            </div>
             <div class="confirm-actions">
                 <button type="button" class="ghost" id="confirmCancel">取消</button>
                 <button type="button" id="confirmOk">确认</button>
@@ -927,19 +954,34 @@
     }
 
     /* ---------- 应用内确认弹窗 ---------- */
-    // appConfirm({title,message,confirmText,danger}) -> Promise<boolean>；Esc/遮罩/取消=false，Enter/确认=true
+    // appConfirm({title,message,expect,confirmText,danger}) -> Promise<boolean>；Esc/遮罩/取消=false，Enter/确认=true
+    // 传 expect 时须逐字输入该文本才解锁确认按钮（高危操作防误触，如吊销/删除证书）
     function appConfirm(opts) {
         opts = opts || {};
         return new Promise(function (resolve) {
             var ov = document.getElementById('confirmOverlay');
             var okBtn = document.getElementById('confirmOk');
             var cancelBtn = document.getElementById('confirmCancel');
+            var expectWrap = document.getElementById('confirmExpect');
+            var expectHint = document.getElementById('confirmExpectHint');
+            var expectInput = document.getElementById('confirmInput');
             if (!ov) { resolve(false); return; }
 
             document.getElementById('confirmTitle').textContent = opts.title || '确认操作';
             document.getElementById('confirmMsg').textContent = opts.message || '';
             okBtn.textContent = opts.confirmText || '确认';
             okBtn.className = opts.danger ? 'danger' : '';
+            if (opts.expect) {
+                expectWrap.classList.remove('hidden');
+                expectHint.textContent = '输入 ' + opts.expect + ' 以确认：';
+                expectInput.value = '';
+                okBtn.disabled = true;
+                expectInput.oninput = function () { okBtn.disabled = this.value !== opts.expect; };
+            } else {
+                expectWrap.classList.add('hidden');
+                expectInput.oninput = null;
+                okBtn.disabled = false;
+            }
 
             var done = false;
             function finish(v) {
@@ -947,21 +989,27 @@
                 done = true;
                 ov.classList.add('hidden');
                 okBtn.onclick = cancelBtn.onclick = ov.onclick = null;
+                expectInput.oninput = null;
+                expectInput.value = '';
+                okBtn.disabled = false;
                 document.removeEventListener('keydown', onKey, true);
                 resolve(v);
             }
             // capture 阶段拦截：优先于各面板自己的 Esc 收起逻辑
             function onKey(e) {
                 if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
-                else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+                else if (e.key === 'Enter') { e.preventDefault(); if (!okBtn.disabled) finish(true); }
             }
             okBtn.onclick = function () { finish(true); };
             cancelBtn.onclick = function () { finish(false); };
             ov.onclick = function (e) { if (e.target === ov) finish(false); };
             document.addEventListener('keydown', onKey, true);
             ov.classList.remove('hidden');
-            // 危险操作默认聚焦「取消」，避免一记回车就把高危操作放行
-            setTimeout(function () { (opts.danger ? cancelBtn : okBtn).focus(); }, 30);
+            // 有输入门槛时聚焦输入框（确认按钮此时禁用，安全）；否则危险操作聚焦「取消」，避免一记回车放行
+            setTimeout(function () {
+                if (opts.expect) expectInput.focus();
+                else (opts.danger ? cancelBtn : okBtn).focus();
+            }, 30);
         });
     }
 
@@ -1173,6 +1221,54 @@
     function showSub(sub) {
         document.querySelectorAll('.subtab').forEach(t => t.classList.toggle('active', t.dataset.sub === sub));
         document.querySelectorAll('.subpanel').forEach(p => p.classList.toggle('hidden', p.dataset.sub !== sub));
+        if (sub !== 'issue' && EDITING) cancelEdit();
+    }
+
+    // 编辑重签：预填签发表单，名称锁定；提交走 /api/certs/{name}/reissue 原位替换
+    let EDITING = null;
+
+    // 有效期下拉只有 4 档，metadata 存的是实际时长（可能被根寿命压过），取最接近的一档
+    function pickDuration(metaDur) {
+        const m = /(\d+)h/.exec(metaDur || '');
+        const hours = m ? parseInt(m[1], 10) : 0;
+        if (!hours) return '8760h';
+        const opts = [...document.querySelectorAll('#certForm [name=duration] option')].map(o => parseInt(o.value, 10));
+        let best = opts[0];
+        for (const o of opts) if (Math.abs(o - hours) < Math.abs(best - hours)) best = o;
+        return best + 'h';
+    }
+
+    function startEdit(name) {
+        const dec = decodeURIComponent(name);
+        const c = CERTS.find(x => x.name === dec);
+        if (!c) { toast('未找到该证书，请刷新列表后重试', 'err'); return; }
+        EDITING = dec;
+        showSub('issue');
+        const f = document.getElementById('certForm');
+        const nameInput = f.querySelector('[name=name]');
+        nameInput.value = dec;
+        nameInput.disabled = true;
+        f.querySelector('[name=description]').value = c.description || '';
+        f.querySelector('[name=sans]').value = (c.sans || []).join('\n');
+        f.querySelector('[name=key_type]').value = c.key_type || 'ec-p256';
+        f.querySelector('[name=duration]').value = pickDuration(c.duration);
+        f.querySelector('[name=auto_renew]').checked = !!c.auto_renew;
+        document.getElementById('editName').textContent = dec;
+        document.getElementById('editBanner').classList.remove('hidden');
+        document.getElementById('submitBtn').textContent = '重新签发';
+        document.getElementById('result').innerHTML = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        EDITING = null;
+        const f = document.getElementById('certForm');
+        const nameInput = f.querySelector('[name=name]');
+        nameInput.disabled = false;
+        f.reset();
+        f.querySelector('[name=duration]').value = '8760h';
+        document.getElementById('editBanner').classList.add('hidden');
+        document.getElementById('submitBtn').textContent = '签发证书';
     }
 
     function renderStats() {
@@ -1241,18 +1337,23 @@
         const manageBtns = (c.origin === 'imported')
             ? ''
             : '<button class="ghost" onclick="doRenew(\'' + n + '\', this)">续签</button>' +
+              '<button class="ghost" onclick="startEdit(\'' + n + '\')">编辑重签</button>' +
               '<button class="ghost" onclick="doRevoke(\'' + n + '\', this)">吊销</button>';
         return '<a href="' + dlHref(c.crt) + '">下载证书</a>' + keyBtn + manageBtns +
             '<button class="ghost" onclick="toggleDetail(\'' + n + '\', this)">详情</button>' +
             '<button class="danger" onclick="doDelete(\'' + n + '\', this)">删除</button>';
     }
 
-    // 域名块（域名 + 复制按钮 + 文件夹路径）
+    // 域名块（域名 + 复制按钮 + 文件夹路径 + 可选描述；行间距由 .dom-block 行距控制）
     function certDomainCell(c) {
         const n = encodeURIComponent(c.name);
-        return '<div class="dom"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
+        const desc = c.description
+            ? '<div class="folder dom-desc">' + escapeHtml(c.description) + '</div>'
+            : '';
+        return '<div class="dom-block"><div class="dom"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
             '<button class="ghost copy-btn" title="复制域名" onclick="copyDomain(\'' + n + '\', this)">复制</button></div>' +
-            '<div class="folder">' + escapeHtml(c.folder) + '</div>';
+            '<div class="folder">' + escapeHtml(c.folder) + '</div>' +
+            desc + '</div>';
     }
 
     function certRow(c) {
@@ -1309,6 +1410,7 @@
                 const exp = fmtExpiry(c);
                 return '<div class="exp-item">' +
                     '<div class="exp-main"><strong>' + escapeHtml(c.domain || c.name) + '</strong>' + certBadges(c) + '</div>' +
+                    (c.description ? '<div class="exp-sub">' + escapeHtml(c.description) + '</div>' : '') +
                     '<div class="exp-sub">' + escapeHtml(exp.days) + ' · 到期 ' + escapeHtml(exp.date) + '</div>' +
                     '</div>';
             }).join('');
@@ -1318,7 +1420,8 @@
         top.forEach(c => {
             const exp = fmtExpiry(c);
             r += '<tr><td><strong>' + escapeHtml(c.domain || c.name) + '</strong>' +
-                    '<div class="folder">' + escapeHtml(c.folder) + '</div></td>' +
+                    '<div class="folder">' + escapeHtml(c.folder) + '</div>' +
+                    (c.description ? '<div class="folder dom-desc">' + escapeHtml(c.description) + '</div>' : '') + '</td>' +
                 '<td><div class="state">' + certBadges(c) + '</div></td>' +
                 '<td><span class="badge ' + exp.cls + '">' + escapeHtml(exp.days) + '</span></td>' +
                 '<td class="folder">' + escapeHtml(exp.date) + '</td></tr>';
@@ -1547,7 +1650,8 @@
     async function doRevoke(name, btn) {
         if (!(await appConfirm({
             title: '吊销证书',
-            message: '确认吊销「' + decodeURIComponent(name) + '」？\n吊销后该证书进入 CRL，已安装 CRL 的客户端将拒绝它。',
+            message: '吊销「' + decodeURIComponent(name) + '」后，该证书进入 CRL，已安装 CRL 的客户端将拒绝它。',
+            expect: decodeURIComponent(name),
             confirmText: '确认吊销',
             danger: true,
         }))) return;
@@ -1562,7 +1666,8 @@
     async function doDelete(name, btn) {
         if (!(await appConfirm({
             title: '删除证书文件',
-            message: '确认删除「' + decodeURIComponent(name) + '」的证书文件？\n文件将从磁盘移除，此操作不可恢复。',
+            message: '「' + decodeURIComponent(name) + '」的证书与私钥文件将从磁盘移除，此操作不可恢复。',
+            expect: decodeURIComponent(name),
             confirmText: '确认删除',
             danger: true,
         }))) return;
@@ -1583,12 +1688,13 @@
 
     document.getElementById('certForm').onsubmit = async function (e) {
         e.preventDefault();
+        const editing = EDITING;
         const btn = document.getElementById('submitBtn');
-        btn.disabled = true; btn.textContent = '签发中...';
+        btn.disabled = true; btn.textContent = editing ? '重新签发中...' : '签发中...';
         const resultDiv = document.getElementById('result');
         resultDiv.innerHTML = '';
         const f = e.target;
-        const name = f.name.value.trim();
+        const name = editing || f.name.value.trim();
         if (name && !/^[A-Za-z0-9_-]+$/.test(name)) {
             document.getElementById('nameErr').style.display = 'block';
             btn.disabled = false; btn.textContent = '签发证书'; return;
@@ -1598,24 +1704,26 @@
             sans: f.sans.value,
             duration: f.duration.value,
             key_type: f.key_type.value,
-            auto_renew: f.auto_renew.checked
+            auto_renew: f.auto_renew.checked,
+            description: f.description.value
         };
         try {
-            const res = await apiFetch('/api/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const url = editing ? '/api/certs/' + encodeURIComponent(editing) + '/reissue' : '/api/issue';
+            const res = await apiFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const json = await res.json();
             if (json.success) {
-                resultDiv.innerHTML = '<div class="result"><strong>✅ 签发成功</strong><br>域名：' + escapeHtml(json.domain) +
+                resultDiv.innerHTML = '<div class="result"><strong>' + (editing ? '✅ 重新签发成功' : '✅ 签发成功') + '</strong><br>域名：' + escapeHtml(json.domain) +
                     '<br>路径：<code>' + escapeHtml(json.path) + '</code></div>';
-                f.reset();
-                document.querySelector('#certForm [name=duration]').value = '8760h';
-                loadCerts();
+                if (editing) { cancelEdit(); loadCerts(); }
+                else { f.reset(); document.querySelector('#certForm [name=duration]').value = '8760h'; loadCerts(); }
             } else {
-                resultDiv.innerHTML = '<div class="result error"><strong>❌ 签发失败</strong><br><pre style="white-space:pre-wrap;word-break:break-all;margin:6px 0 0">' + escapeHtml(json.error) + '</pre></div>';
+                resultDiv.innerHTML = '<div class="result error"><strong>' + (editing ? '❌ 重新签发失败' : '❌ 签发失败') + '</strong><br><pre style="white-space:pre-wrap;word-break:break-all;margin:6px 0 0">' + escapeHtml(json.error) + '</pre></div>';
             }
         } catch (err) {
             resultDiv.innerHTML = '<div class="result error"><strong>❌ 请求错误</strong><br>' + escapeHtml(String(err)) + '</div>';
         } finally {
-            btn.disabled = false; btn.textContent = '签发证书';
+            btn.disabled = false;
+            if (!EDITING) btn.textContent = '签发证书';
         }
     };
 
@@ -1636,7 +1744,7 @@
             resultDiv.innerHTML = '<div class="result error"><strong>❌ 证书内容不能为空</strong></div>';
             btn.disabled = false; btn.textContent = '导入证书'; return;
         }
-        const data = { name: name, crt: f.crt.value, key: f.key.value };
+        const data = { name: name, crt: f.crt.value, key: f.key.value, description: f.description.value };
         try {
             const res = await apiFetch('/api/certs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const json = await res.json();

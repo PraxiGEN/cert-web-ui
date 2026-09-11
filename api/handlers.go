@@ -201,6 +201,33 @@ func renewHandler(cfg config.Config) http.HandlerFunc {
 	}
 }
 
+// reissueHandler 编辑重签：名称锁定，SAN/有效期/密钥类型/描述可改，原位替换旧证书
+func reissueHandler(cfg config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.PathValue("name")
+		var req ca.IssueRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			slog.Error("编辑重签请求体解析失败", "err", err)
+			writeError(w, "请求体解析失败")
+			return
+		}
+		res, err := ca.Reissue(cfg, name, req)
+		if err != nil {
+			slog.Error("编辑重签失败", "name", name, "err", err)
+			writeError(w, err.Error())
+			return
+		}
+		slog.Info("编辑重签成功", "domain", res.Domain, "path", res.Path)
+		writeJSON(w, map[string]any{
+			"success":  true,
+			"domain":   res.Domain,
+			"path":     res.Path,
+			"crt_file": res.CRTFile,
+			"key_file": res.KeyFile,
+		})
+	}
+}
+
 func revokeHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := r.PathValue("name")
