@@ -242,11 +242,12 @@
         /* 证书列表：固定列宽比例 + 窄屏横向滚动（列宽不再被内容撑变形） */
         #certList { overflow-x: auto; }
         #certList table { table-layout: fixed; min-width: 800px; }
+        /* 域名/SAN/过期三列等宽，状态收窄，操作拿剩余大头 */
         #certList th:nth-child(1) { width: 22%; }
-        #certList th:nth-child(2) { width: 16%; }
-        #certList th:nth-child(3) { width: 13%; }
-        #certList th:nth-child(4) { width: 19%; }
-        #certList th:nth-child(5) { width: 30%; }
+        #certList th:nth-child(2) { width: 22%; }
+        #certList th:nth-child(3) { width: 8%; }
+        #certList th:nth-child(4) { width: 22%; }
+        #certList th:nth-child(5) { width: 26%; }
         #certList td { word-break: break-word; }
         /* 手机端（≤760px 由 JS 切换渲染）：证书卡片式布局；桌面端仍用表格 */
         .cert-cards { display: flex; flex-direction: column; gap: 12px; }
