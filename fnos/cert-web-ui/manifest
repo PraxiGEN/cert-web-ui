@@ -1,0 +1,13 @@
+appname=cert-web-ui
+version=1.0.6
+display_name=Cert Web UI 证书管理
+desc=自建 CA 证书管理平台：网页点按钮签发/续签/吊销 HTTPS 证书，内网设备（NAS/HA/面板）上 HTTPS 不再报警告。
+source=thirdparty
+platform=all
+maintainer=PraxiGEN
+distributor=PraxiGEN
+desktop_uidir=ui
+desktop_applaunchname=cert-web-ui.main
+service_port=9280
+checkport=true
+ctl_stop=true
