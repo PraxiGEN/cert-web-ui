@@ -64,7 +64,10 @@ jobs:
     env:
       VERSION: ${{ needs.resolve.outputs.version || github.ref_name }}
     steps:
+      # fetch-depth: 0 需要完整历史与全部 tag，供生成「上一版本..本版本」的更新说明
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: docker/setup-buildx-action@v3
 
@@ -104,8 +107,40 @@ jobs:
           cd ipkg-build
           IMAGE="$IMAGE" PKG_VERSION="${VERSION#v}" bash build-ipkg.sh
 
+      # Release 说明：上一 tag 到本 tag 的 commit 列表 + 镜像信息（单点维护，不引入 CHANGELOG.md）
+      - name: Generate release notes
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          PREV=$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || true)
+          if [ -n "$PREV" ]; then
+            RANGE="$PREV..${VERSION}"
+          else
+            RANGE="${VERSION}" # 首个 Release：取该 tag 所含全部提交
+          fi
+          {
+            echo "## 更新内容"
+            echo ""
+            git log --no-merges --pretty=format:"- %s (%h)" "$RANGE" || echo "- 首个版本"
+          } > release-notes.md
+          cat >> release-notes.md <<EOF
+
+          ## 镜像
+
+          \`\`\`
+          docker pull ghcr.io/praxigen/cert-web-ui:${VERSION}
+          \`\`\`
+
+          多架构（amd64 + arm64），\`latest\` 与本版本同步更新。
+
+          ## iKuai 应用市场
+
+          附件 \`.ipkg\` 为 iKuai 离线安装包（内嵌 amd64 镜像），可在应用商店离线安装导入。
+          EOF
+
       - name: Upload ipkg to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
+          body_path: release-notes.md
           files: ipkg-build/*.ipkg
