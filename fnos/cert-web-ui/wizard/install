@@ -1,0 +1,28 @@
+[
+  {
+    "stepTitle": "基础配置",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "首次启动会自动生成根证书和根私钥，保存在应用数据目录中，建议定期备份。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_ca_name",
+        "label": "根证书名称（CN）",
+        "initValue": "Cert Web UI Root CA",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入根证书名称"
+          }
+        ]
+      },
+      {
+        "type": "password",
+        "field": "wizard_ui_password",
+        "label": "访问密码（留空不启用门禁）"
+      }
+    ]
+  }
+]
