@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "cert-web-ui.main": {
+      "title": "Cert Web UI 证书管理",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "http",
+      "port": "9280",
+      "url": "/",
+      "allUsers": true
+    }
+  }
+}
