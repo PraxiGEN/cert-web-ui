@@ -1,0 +1,25 @@
+services:
+  cert-web-ui:
+    image: ghcr.io/praxigen/cert-web-ui:v1.0.5
+    container_name: cert-web-ui-${NAME_NONCE}
+    deploy:
+      resources:
+        limits:
+          cpus: ${CPUS_LIMIT}
+          memory: ${MEMORY_LIMIT}
+    restart: ${RESTART}
+    ports:
+      - ${HOST_IP}:${APP_PORT_WEB}:9280/tcp
+    volumes:
+      - ./data:/data
+    env_file:
+      - ./environment
+    networks:
+      - doc_app_default
+    labels:
+      createdBy: "Cert Web UI"
+
+networks:
+  doc_app_default:
+    external: true
+    name: doc_app_default

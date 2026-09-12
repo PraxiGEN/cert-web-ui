@@ -92,3 +92,20 @@ jobs:
             APP_VERSION=${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # iKuai 应用市场离线安装包：镜像发布后拉回 amd64 版内嵌出包，挂到 Release。
+      # iKuai 路由以 x86 为主，包内嵌 amd64 镜像（arm64 镜像仍正常发布在 GHCR）。
+      - name: Package iKuai ipkg
+        env:
+          IMAGE: ghcr.io/${{ steps.repo.outputs.name }}:${{ env.VERSION }}
+        run: |
+          docker pull "$IMAGE"
+          cp -r ipkg ipkg-build
+          cd ipkg-build
+          IMAGE="$IMAGE" PKG_VERSION="${VERSION#v}" bash build-ipkg.sh
+
+      - name: Upload ipkg to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: ipkg-build/*.ipkg

@@ -1,3 +1,7 @@
 # 本地运行产物（CA 与证书数据都在 Docker 卷里，不应入库）
 /data/
 /certs/
+# ipkg 打包产物
+/ipkg/*.ipkg
+/ipkg-build/
+*.bundle

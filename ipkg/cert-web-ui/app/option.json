@@ -1,0 +1,46 @@
+[
+  {
+    "default": 9280,
+    "min": 1024,
+    "max": 65535,
+    "attrname": "APP_PORT_WEB",
+    "label": {
+      "en": "Web UI Port (TCP)",
+      "zh": "管理界面端口 (TCP)"
+    },
+    "description": {
+      "zh": "浏览器访问 http://<爱快IP>:端口 打开管理页面"
+    },
+    "required": true,
+    "scope": "config",
+    "type": "integer"
+  },
+  {
+    "default": "iKuai Root CA",
+    "attrname": "CA_NAME",
+    "label": {
+      "en": "Root CA Common Name",
+      "zh": "根证书名称 (CN)"
+    },
+    "description": {
+      "zh": "根证书的显示名称，会出现在浏览器证书详情里，建议起有辨识度的名字"
+    },
+    "required": true,
+    "scope": "environment",
+    "type": "string"
+  },
+  {
+    "default": "",
+    "attrname": "UI_PASSWORD",
+    "label": {
+      "en": "UI Password (empty = no auth)",
+      "zh": "访问密码（留空则不启用）"
+    },
+    "description": {
+      "zh": "管理页面的登录密码；内网环境也建议设置，防止他人误操作根证书"
+    },
+    "required": false,
+    "scope": "environment",
+    "type": "password"
+  }
+]

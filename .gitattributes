@@ -1,0 +1,2 @@
+# shell 脚本一律 LF（CI 与 ipkg 内脚本对 CRLF 敏感）
+*.sh text eol=lf
