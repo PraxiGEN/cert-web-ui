@@ -37,6 +37,10 @@ docker compose up -d
 
 `CA_NAME`、有效期、续签周期等参数直接在 `docker-compose.yml` 的 `environment` 中修改；如需访问门禁，取消 `UI_PASSWORD` 行的注释并设置密码即可。
 
+### iKuai 应用市场（ipkg 离线安装）
+
+iKuai v4 路由用户可从 [Releases](https://github.com/PraxiGEN/cert-web-ui/releases) 下载 `.ipkg` 离线安装包（内嵌 amd64 镜像，无需拉取 Docker 镜像）：**高级应用 → 应用市场 → 本地安装** 导入即可，安装后在应用列表点击图标直接打开管理页。
+
 ## 信任根证书
 
 首次启动会在 `/data` 自动生成根证书 `root_ca.crt`（首页「下载根证书」可取），把它导入每一台会访问内网站点的设备后，签发的证书都被视为可信：
