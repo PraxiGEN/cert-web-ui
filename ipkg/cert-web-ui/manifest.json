@@ -1,0 +1,17 @@
+{
+  "name": "cert-web-ui",
+  "version": "1.0.5",
+  "display_name": "Cert Web UI 证书管理",
+  "image": "ghcr.io/praxigen/cert-web-ui:v1.0.5",
+  "description": "自建 CA 证书管理平台：网页点按钮签发/续签/吊销 HTTPS 证书，内网设备（NAS/HA/面板）上 HTTPS 不再报警告。",
+  "type": "1",
+  "maintainer": "PraxiGEN",
+  "maintainer_url": "https://github.com/PraxiGEN/cert-web-ui",
+  "distributor": "PraxiGEN",
+  "distributor_url": "https://github.com/PraxiGEN/cert-web-ui",
+  "requirements": {
+    "memory": "64MB",
+    "storage": "512MB",
+    "os_min_version": "4.0.0"
+  }
+}
