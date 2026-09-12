@@ -1,0 +1,7 @@
+{
+  "defaults": {
+    "run-as": "package"
+  },
+  "username": "cert-web-ui",
+  "groupname": "cert-web-ui"
+}
