@@ -5,3 +5,4 @@
 /ipkg/*.ipkg
 /ipkg-build/
 *.bundle
+/fnos/*.fpk
