@@ -37,6 +37,22 @@ docker compose up -d
 
 `CA_NAME`、有效期、续签周期等参数直接在 `docker-compose.yml` 的 `environment` 中修改；如需访问门禁，取消 `UI_PASSWORD` 行的注释并设置密码即可。
 
+## 信任根证书
+
+首次启动会在 `/data` 自动生成根证书 `root_ca.crt`（首页「下载根证书」可取），把它导入每一台会访问内网站点的设备后，签发的证书都被视为可信：
+
+| 系统 | 操作 |
+|---|---|
+| Windows | 管理员命令：`certutil -addstore -f root root_ca.crt` |
+| macOS | `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain root_ca.crt` |
+| Debian / Ubuntu / 树莓派 OS | 拷入 `/usr/local/share/ca-certificates/xxx.crt`（须 `.crt` 后缀）→ `sudo update-ca-certificates` |
+| RHEL / CentOS / Fedora | 拷入 `/etc/pki/ca-trust/source/anchors/` → `sudo update-ca-trust extract` |
+| Android | 设置 → 安全 → 安装证书 → CA 证书（浏览器信任；部分 App 内嵌页面不认用户证书） |
+| iOS / iPadOS | Safari 下载并安装描述文件后，**必须**再到 设置 → 通用 → 关于本机 → 证书信任设置 打开开关 |
+| Firefox | 全平台独立证书库：设置 → 隐私与安全 → 证书 → 证书颁发机构 → 导入并勾选「信任标识网站」 |
+
+> 每台客户端都要导入，没装的设备访问时照样告警。导入后仍提示不受信任的，先重启浏览器或清一次会话。
+
 ## 配置
 
 | 环境变量 | 默认值 | 说明 |
