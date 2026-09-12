@@ -1,0 +1,28 @@
+#!/bin/bash
+# cert-web-ui 生命周期脚本：启停由应用中心按 docker-project 资源处理，
+# status 需准确反映容器运行状态（官方 Docker 应用约定：运行 0 / 未运行 3）。
+
+CONTAINER_NAME="cert-web-ui"
+
+is_running() {
+  docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -q '"Status": "running"'
+}
+
+case "$1" in
+  start)
+    exit 0
+    ;;
+  stop)
+    exit 0
+    ;;
+  status)
+    if is_running; then
+      exit 0
+    fi
+    exit 3
+    ;;
+  *)
+    echo "Unknown command: $1" > "$TRIM_TEMP_LOGFILE"
+    exit 1
+    ;;
+esac

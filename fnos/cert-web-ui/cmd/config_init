@@ -1,0 +1,3 @@
+#!/bin/bash
+# fnOS 生命周期钩子：cert-web-ui 无需额外处理（Compose 由应用中心托管）
+exit 0
