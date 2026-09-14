@@ -79,6 +79,14 @@ iKuai v4 路由用户可从 [Releases](https://github.com/PraxiGEN/cert-web-ui/r
 - 全部文件原子写入；日志走 `log/slog` 结构化输出
 - 前端为单文件 `web/index.html`（原生 JS，无框架无构建）
 
+## 自行构建
+
+构建定义位于 `docker/Dockerfile`，构建上下文为仓库根目录：
+
+```bash
+docker build -f docker/Dockerfile -t cert-web-ui:local .
+```
+
 ## License
 
 MIT
