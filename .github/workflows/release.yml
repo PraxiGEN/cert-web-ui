@@ -85,6 +85,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          # 构建定义位于 docker/，构建上下文仍为仓库根（Dockerfile 需 COPY 源码）
+          file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           # v1.2.3 → ghcr.io/praxigen/cert-web-ui:v1.2.3 与 :latest
