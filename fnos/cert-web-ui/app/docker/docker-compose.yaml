@@ -4,9 +4,9 @@ services:
     container_name: cert-web-ui
     restart: unless-stopped
     ports:
-      - "${TRIM_SERVICE_PORT:-9280}:9280"
+      - "9280:9280"
     volumes:
-      - "${TRIM_PKGVAR}/data:/data"
+      - "${TRIM_DATA_SHARE_PATHS:-/var/apps/cert-web-ui/share/data}:/data"
     environment:
       - CA_NAME=${wizard_ca_name:-Cert Web UI Root CA}
       - UI_PASSWORD=${wizard_ui_password:-}
