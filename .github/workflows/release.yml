@@ -1,4 +1,5 @@
-# 自动发布 Docker 镜像到 GHCR。触发：① push main 且 config.go 的 var Version 有变自动打 tag 发布；
+# 主发布流程：定版本 → 联动三个独立打包（docker / ipkg / fpk）→ 汇总产物挂 Release。
+# 触发：① push main 且 config.go 的 var Version 有变自动打 tag 发布；
 # ② workflow_dispatch 手动（可指定版本）；③ push v* tag。
 # 版本号经 -ldflags 编译期烙进二进制（不走运行时环境变量）；鉴权用内置 GITHUB_TOKEN。
 # GITHUB_TOKEN 打的 tag 不触发新 run（防递归），故打 tag 与构建须串在本 workflow 内。
@@ -55,64 +56,48 @@ jobs:
             echo "version=$TAG" >> "$GITHUB_OUTPUT"
           fi
 
+  # 三个独立打包（可复用 workflow），既能被本流程联动，也能各自手动触发。
+  # tag 触发时 resolve 被跳过（tag 已存在），version 回退到 github.ref_name。
   docker:
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/_docker.yml
     needs: resolve
-    # tag 触发时 resolve 被跳过（tag 已存在），直接用 ref 名构建；
-    # main push / 手动触发时必须拿到 resolve 产出的新版本号，否则（版本未变）不发布。
     if: ${{ !cancelled() && (needs.resolve.result == 'skipped' || needs.resolve.outputs.version != '') }}
-    env:
-      VERSION: ${{ needs.resolve.outputs.version || github.ref_name }}
+    with:
+      version: ${{ needs.resolve.outputs.version || github.ref_name }}
+
+  ipkg:
+    uses: ./.github/workflows/_ipkg.yml
+    needs: docker # ipkg 内嵌镜像，须等待镜像推送到 GHCR
+    if: ${{ !cancelled() && (needs.resolve.result == 'skipped' || needs.resolve.outputs.version != '') }}
+    with:
+      version: ${{ needs.resolve.outputs.version || github.ref_name }}
+
+  fpk:
+    uses: ./.github/workflows/_fpk.yml
+    needs: resolve # fpk 仅引用 GHCR 镜像，不内嵌，可与 docker 并行
+    if: ${{ !cancelled() && (needs.resolve.result == 'skipped' || needs.resolve.outputs.version != '') }}
+    with:
+      version: ${{ needs.resolve.outputs.version || github.ref_name }}
+
+  # 汇总三个打包产物，生成更新说明并挂到 Release。
+  release:
+    runs-on: ubuntu-latest
+    needs: [docker, ipkg, fpk]
+    if: ${{ !cancelled() && (needs.resolve.result == 'skipped' || needs.resolve.outputs.version != '') }}
     steps:
-      # fetch-depth: 0 需要完整历史与全部 tag，供生成「上一版本..本版本」的更新说明
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: docker/setup-buildx-action@v3
-
-      # GHCR 镜像名必须全小写，而 github.repository 保留原始大小写（如 PraxiGEN/...），
-      # 手动拼 tag 不会自动转换，须显式小写化。
-      - id: repo
-        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-
-      - uses: docker/login-action@v3
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          path: artifacts
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          # 构建定义位于 docker/，构建上下文仍为仓库根（Dockerfile 需 COPY 源码）
-          file: docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          # v1.2.3 → ghcr.io/praxigen/cert-web-ui:v1.2.3 与 :latest
-          tags: |
-            ghcr.io/${{ steps.repo.outputs.name }}:${{ env.VERSION }}
-            ghcr.io/${{ steps.repo.outputs.name }}:latest
-          build-args: |
-            APP_VERSION=${{ env.VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # iKuai 应用市场离线安装包：镜像发布后拉回 amd64 版内嵌出包，挂到 Release。
-      # iKuai 路由以 x86 为主，包内嵌 amd64 镜像（arm64 镜像仍正常发布在 GHCR）。
-      - name: Package iKuai ipkg
-        env:
-          IMAGE: ghcr.io/${{ steps.repo.outputs.name }}:${{ env.VERSION }}
-        run: |
-          docker pull "$IMAGE"
-          cp -r ipkg ipkg-build
-          cd ipkg-build
-          IMAGE="$IMAGE" PKG_VERSION="${VERSION#v}" bash build-ipkg.sh
-
-      # Release 说明：上一 tag 到本 tag 的 commit 列表 + 镜像信息（单点维护，不引入 CHANGELOG.md）
+      # Release 说明：上一 tag 到本 tag 的 commit 列表 + 镜像/包信息（单点维护，不引入 CHANGELOG.md）
       - name: Generate release notes
         env:
-          VERSION: ${{ env.VERSION }}
+          VERSION: ${{ needs.resolve.outputs.version || github.ref_name }}
         run: |
           PREV=$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || true)
           if [ -n "$PREV" ]; then
@@ -138,11 +123,17 @@ jobs:
           ## iKuai 应用市场
 
           附件 \`.ipkg\` 为 iKuai 离线安装包（内嵌 amd64 镜像），可在应用商店离线安装导入。
+
+          ## 飞牛 fnOS 应用中心
+
+          附件 \`.fpk\` 为飞牛 fnOS 应用中心离线包，可在应用中心手动安装导入。
           EOF
 
-      - name: Upload ipkg to Release
+      - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.VERSION }}
+          tag_name: ${{ needs.resolve.outputs.version || github.ref_name }}
           body_path: release-notes.md
-          files: ipkg-build/*.ipkg
+          files: |
+            artifacts/ipkg/*.ipkg
+            artifacts/fpk/*.fpk
