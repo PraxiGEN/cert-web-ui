@@ -1,0 +1,47 @@
+# 可复用：打包 iKuai v4 应用市场离线安装包（.ipkg，内嵌 amd64 镜像）。
+# 既被主 release.yml 联动调用（workflow_call），也可手动独立触发（workflow_dispatch）。
+name: ipkg-build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "版本号，形如 v1.2.3"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，形如 v1.2.3"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  ipkg:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      # 镜像须已发布到 GHCR（主流程里 docker 任务先于本任务完成），拉回 amd64 版内嵌出包。
+      - name: Package iKuai ipkg
+        env:
+          IMAGE: ghcr.io/${{ steps.repo.outputs.name }}:${{ env.VERSION }}
+        run: |
+          docker pull "$IMAGE"
+          cp -r ipkg ipkg-build
+          cd ipkg-build
+          IMAGE="$IMAGE" PKG_VERSION="${VERSION#v}" bash build-ipkg.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipkg
+          path: ipkg-build/*.ipkg
+          if-no-files-found: error

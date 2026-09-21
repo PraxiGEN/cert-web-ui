@@ -1,0 +1,58 @@
+# 可复用：构建并推送多架构 Docker 镜像到 GHCR。
+# 既被主 release.yml 联动调用（workflow_call），也可手动独立触发（workflow_dispatch）。
+# 版本号经 -ldflags 编译期烙进二进制；鉴权用内置 GITHUB_TOKEN。
+name: docker-build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "版本号，形如 v1.2.3"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，形如 v1.2.3"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # GHCR 镜像名必须全小写，而 github.repository 保留原始大小写，须显式小写化。
+      - id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          # 构建定义位于 docker/，构建上下文仍为仓库根（Dockerfile 需 COPY 源码）
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          # v1.2.3 → ghcr.io/praxigen/cert-web-ui:v1.2.3 与 :latest
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.name }}:${{ env.VERSION }}
+            ghcr.io/${{ steps.repo.outputs.name }}:latest
+          build-args: |
+            APP_VERSION=${{ env.VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

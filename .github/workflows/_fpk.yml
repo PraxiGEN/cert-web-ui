@@ -1,0 +1,55 @@
+# 可复用：打包飞牛 fnOS 应用中心离线包（.fpk）。
+# 既被主 release.yml 联动调用（workflow_call），也可手动独立触发（workflow_dispatch）。
+# fpk 不内嵌镜像（compose 引用 ghcr.io 已发布镜像），故单独补打时无需等待 docker 发布。
+name: fpk-build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "版本号，形如 v1.2.3"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，形如 v1.2.3（须对应已发布的 tag，补打时会追加到该 Release）"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  fpk:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 飞牛官方 fnpack 提供 Linux 二进制（当前 1.2.3），CI 直接下载执行。
+      - name: Download fnpack (linux-amd64)
+        run: |
+          curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.3-linux-amd64 -o fnpack
+          chmod +x fnpack
+          ./fnpack --version || true
+
+      - name: Package fpk
+        run: |
+          FNPACK="$PWD/fnpack" PKG_VERSION="${VERSION#v}" bash fnos/build-fpk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fpk
+          path: fnos/cert-web-ui.fpk
+          if-no-files-found: error
+
+      # 仅手动独立触发（非被主 release 调用）时，把 .fpk 追加到同名 tag 的 Release 附件。
+      # 满足「其他已发布、仅 fpk 需补打」的场景：单独跑本 workflow 即可归档到已发布 Release。
+      - name: Attach to Release (manual only)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: fnos/cert-web-ui.fpk
