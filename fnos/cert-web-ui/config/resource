@@ -1,0 +1,17 @@
+{
+  "docker-project": {
+    "projects": [
+      {
+        "name": "cert-web-ui",
+        "path": "docker"
+      }
+    ]
+  },
+  "data-share": {
+    "shares": [
+      {
+        "name": "cert-web-ui/data"
+      }
+    ]
+  }
+}

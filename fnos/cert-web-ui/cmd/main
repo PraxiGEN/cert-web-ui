@@ -1,0 +1,45 @@
+#!/bin/bash
+# cert-web-ui 生命周期脚本：启停由应用中心按 docker-project 资源处理，
+# status 需准确反映容器运行状态（官方 Docker 应用约定：运行 0 / 未运行 3）。
+
+CONTAINER_NAME="cert-web-ui"
+
+is_running() {
+  docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -q '"Status": "running"'
+}
+
+case "$1" in
+  start)
+    # 兜底：确保 app/docker/.env 含有 data-share 真实路径，避免 Docker 绑定软链
+    # /var/apps/.../share/data 时落到空目录，导致「应用文件」中的共享目录始终空白。
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    SHARE_LINK="/var/apps/cert-web-ui/share/data"
+    ENV_FILE="$APP_ROOT/app/docker/.env"
+    if [ ! -s "$ENV_FILE" ] || ! grep -q '^TRIM_DATA_SHARE_PATHS=/.\{1,\}' "$ENV_FILE"; then
+      REAL=""
+      if REAL="$(readlink -f "$SHARE_LINK" 2>/dev/null)" && [ -n "$REAL" ]; then
+        :
+      elif [ -n "$TRIM_DATA_SHARE_PATHS" ]; then
+        REAL="$(printf '%s' "$TRIM_DATA_SHARE_PATHS" | cut -d',' -f1 | cut -d';' -f1 | cut -d':' -f1)"
+      fi
+      if [ -n "$REAL" ]; then
+        echo "TRIM_DATA_SHARE_PATHS=${REAL}" > "$ENV_FILE"
+      fi
+    fi
+    exit 0
+    ;;
+  stop)
+    exit 0
+    ;;
+  status)
+    if is_running; then
+      exit 0
+    fi
+    exit 3
+    ;;
+  *)
+    echo "Unknown command: $1" > "$TRIM_TEMP_LOGFILE"
+    exit 1
+    ;;
+esac

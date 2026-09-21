@@ -1,0 +1,43 @@
+#!/bin/bash
+# cert-web-ui 安装初始化。
+# 关键问题：fnOS 的 data-share 共享目录通过软链 /var/apps/<app>/share/<name> 暴露，
+# 但 Docker 在 bind mount 时不会跟随该软链，直接挂载会落到 Docker 自建的空目录，
+# 导致容器内 /data 写入的文件与用户在「应用文件」看到的共享目录不是同一个物理目录
+# （现象：共享目录存在但空白、看不到根证书）。
+# 解决：把 data-share 的真实路径解析出来，写入 app/docker/.env，
+# 供 docker-compose 以真实路径 bind mount（Docker 原生读取同目录 .env）。
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SHARE_LINK="/var/apps/cert-web-ui/share/data"
+ENV_FILE="$APP_ROOT/app/docker/.env"
+LOG="$APP_ROOT/install_debug.log"
+
+resolve_share() {
+  local real=""
+  # 优先：解析软链得到真实路径
+  if real="$(readlink -f "$SHARE_LINK" 2>/dev/null)" && [ -n "$real" ]; then
+    echo "$real"; return
+  fi
+  # 备选：fnOS 注入的环境变量（多路径时取第一段）
+  if [ -n "$TRIM_DATA_SHARE_PATHS" ]; then
+    echo "$TRIM_DATA_SHARE_PATHS" | cut -d',' -f1 | cut -d';' -f1 | cut -d':' -f1
+    return
+  fi
+  echo ""
+}
+
+REAL="$(resolve_share)"
+{
+  echo "install_init at $(date)"
+  echo "APP_ROOT=$APP_ROOT"
+  echo "TRIM_DATA_SHARE_PATHS=$TRIM_DATA_SHARE_PATHS"
+  echo "share symlink: $(ls -ld "$SHARE_LINK" 2>/dev/null || echo MISSING)"
+  echo "resolved realpath: ${REAL:-EMPTY}"
+  if [ -n "$REAL" ]; then
+    echo "TRIM_DATA_SHARE_PATHS=${REAL}" > "$ENV_FILE"
+    echo "wrote $ENV_FILE with real path"
+  else
+    echo "WARN: could not resolve share path; compose will fall back to symlink"
+  fi
+} > "$LOG" 2>&1
+exit 0

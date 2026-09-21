@@ -1,0 +1,36 @@
+#!/bin/bash
+# cert-web-ui 升级初始化：与 install_init 同样解析 data-share 真实路径并写入 .env，
+# 确保升级后 docker-compose 仍用真实路径挂载，共享目录不空白。
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SHARE_LINK="/var/apps/cert-web-ui/share/data"
+ENV_FILE="$APP_ROOT/app/docker/.env"
+LOG="$APP_ROOT/upgrade_debug.log"
+
+resolve_share() {
+  local real=""
+  if real="$(readlink -f "$SHARE_LINK" 2>/dev/null)" && [ -n "$real" ]; then
+    echo "$real"; return
+  fi
+  if [ -n "$TRIM_DATA_SHARE_PATHS" ]; then
+    echo "$TRIM_DATA_SHARE_PATHS" | cut -d',' -f1 | cut -d';' -f1 | cut -d':' -f1
+    return
+  fi
+  echo ""
+}
+
+REAL="$(resolve_share)"
+{
+  echo "upgrade_init at $(date)"
+  echo "APP_ROOT=$APP_ROOT"
+  echo "TRIM_DATA_SHARE_PATHS=$TRIM_DATA_SHARE_PATHS"
+  echo "share symlink: $(ls -ld "$SHARE_LINK" 2>/dev/null || echo MISSING)"
+  echo "resolved realpath: ${REAL:-EMPTY}"
+  if [ -n "$REAL" ]; then
+    echo "TRIM_DATA_SHARE_PATHS=${REAL}" > "$ENV_FILE"
+    echo "wrote $ENV_FILE with real path"
+  else
+    echo "WARN: could not resolve share path; compose will fall back to symlink"
+  fi
+} > "$LOG" 2>&1
+exit 0

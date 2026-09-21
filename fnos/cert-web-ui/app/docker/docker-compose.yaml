@@ -1,0 +1,12 @@
+services:
+  cert-web-ui:
+    image: ghcr.io/praxigen/cert-web-ui:latest
+    container_name: cert-web-ui
+    restart: unless-stopped
+    ports:
+      - "9280:9280"
+    volumes:
+      - "${TRIM_DATA_SHARE_PATHS:-/var/apps/cert-web-ui/share/data}:/data"
+    environment:
+      - CA_NAME=${wizard_ca_name:-Cert Web UI Root CA}
+      - UI_PASSWORD=${wizard_ui_password:-}

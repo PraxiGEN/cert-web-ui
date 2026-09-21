@@ -1,2 +1,5 @@
 # shell 脚本一律 LF（CI 与 ipkg 内脚本对 CRLF 敏感）
 *.sh text eol=lf
+# fnOS 生命周期钩子脚本无扩展名，但在 Linux 容器内经 shebang 直接执行；
+# 带 CRLF 会导致 #!/bin/bash\r 解析失败、脚本整体不执行，故强制 LF。
+/fnos/cert-web-ui/cmd/* text eol=lf
