@@ -29,10 +29,12 @@ FPK="$APP_DIR/cert-web-ui.fpk"
 [ -f "$FPK" ] || FPK="cert-web-ui.fpk"
 [ -f "$FPK" ] || { echo "ERROR: fpk not produced" >&2; exit 1; }
 
-# fnpack 在 Windows 上打包会丢失可执行位（全 666），重打一层 tar 把 cmd/* 修成 755
+# fnpack 在 Windows 上打包会丢失可执行位（全 666），重打一层 tar 把 fpk 顶层 cmd/* 修成 755；
+# 同时清洗可能存在的 CRLF（Windows 行尾会让容器内 shebang 执行失败），确保脚本为纯 LF。
 TMP=$(mktemp -d)
 tar xzf "$FPK" -C "$TMP"
 chmod 755 "$TMP"/cmd/* 2>/dev/null || true
+sed -i 's/\r$//' "$TMP"/cmd/* 2>/dev/null || true
 tar czf "$FPK" -C "$TMP" app.tgz cmd config wizard manifest ICON.PNG ICON_256.PNG
 rm -rf "$TMP"
 
